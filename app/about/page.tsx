@@ -1,75 +1,16 @@
-
-'use client'
 import Image from "next/image";
-import { Button } from "./components/shadcn/button";
 import Link from "next/link";
-import { motion } from "framer-motion";
-import { useEffect, useState } from "react";
+import { Button } from "../components/shadcn/button";
 
-export default function Home() {
-  const [shake, setShake] = useState(false);
+export const metadata = {
+  title: "About | Precision Details",
+  description: "Learn about Precision Details — our mission, values, and commitment to showroom-quality finishes.",
+};
 
-  // Only run shake effect on client
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const interval = setInterval(() => {
-      setShake(true);
-      setTimeout(() => setShake(false), 500); // duration of shake
-    }, 5000); // every 5 seconds
-    return () => clearInterval(interval);
-  }, []);
-
+export default function AboutPage() {
   return (
-    <div>
-      <section>
-        <div className="relative w-svw min-h-[calc(100svh-4rem)] pt-16">
-          <Image
-            src="/bg-hero.png"
-            alt="Precision Details background"
-            fill
-            priority
-            className="object-cover"
-          />
-          {/* Overlay for darkening effect (fade in on enter) */}
-          <div
-            className="absolute inset-0 bg-black/50 pointer-events-none"
-          />
-          <div className="absolute inset-0">
-            <div className="flex items-center flex-col justify-center h-full px-4 text-center">
-              <h1 className="text-4xl sm:text-5xl md:text-6xl font-heading text-white leading-tight">
-                Your Car. <br /> Showroom Fresh.<br /> Every Time.
-              </h1>
-
-              <p className="text-base sm:text-lg text-white/90 mt-4 max-w-xl">
-                Premium detailing with top-grade products, a fast, efficient process, and results that turn heads. Book today, drive away in hours. Your car will thank you!
-              </p>
-
-              <div
-                className="mt-10"
-              >
-                <motion.div
-                  animate={
-                    shake
-                      ? {
-                          x: [0, -8, 8, -8, 8, 0],
-                          y: [0, -8, 8, -8, 8, 0],
-                        }
-                      : { x: 0, y: 0 }
-                  }
-                  transition={{ duration: 0.5 }}
-                  style={{ transformOrigin: "50% 50% 0px" }}
-                >
-                  <Button asChild className="px-6 sm:px-8 py-4 sm:py-6 text-white text-base sm:text-lg rounded-full">
-                    <Link href="/pricing">Get Started</Link>
-                  </Button>
-                </motion.div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+    <main className="min-h-svh bg-background">
       {/* Hero */}
-      <></>
       <section className="relative isolate overflow-hidden">
         <div className="mx-auto max-w-7xl px-6 py-20 lg:px-8">
           <div className="mx-auto max-w-2xl text-center">
@@ -116,9 +57,23 @@ export default function Home() {
             <p className="mt-4 text-muted-foreground">
               We started Precision Details to raise the bar on what “clean” really means. Every appointment is a process—assessment, prep, multi-stage cleaning, finish protection, and a final inspection under proper lighting. No shortcuts.
             </p>
+            <dl className="mt-8 grid grid-cols-3 gap-4">
+              <div>
+                <dt className="text-sm text-muted-foreground">Years Experience</dt>
+                <dd className="mt-1 text-2xl font-heading text-white">8+</dd>
+              </div>
+              <div>
+                <dt className="text-sm text-muted-foreground">Repeat Clients</dt>
+                <dd className="mt-1 text-2xl font-heading text-white">500+</dd>
+              </div>
+              <div>
+                <dt className="text-sm text-muted-foreground">5★ Reviews</dt>
+                <dd className="mt-1 text-2xl font-heading text-white">1.2k</dd>
+              </div>
+            </dl>
           </div>
         </div>
       </section>
-    </div>
+    </main>
   );
 }
