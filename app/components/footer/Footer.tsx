@@ -22,9 +22,9 @@ export default function Footer() {
           <div>
             <h3 className="font-heading text-white text-lg">Contact</h3>
             <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
-              <li>Phone: (555) 123-4567</li>
-              <li>Email: hello@precisiondetails.co</li>
-              <li>Mon–Sat 8am–6pm</li>
+              <li>Phone: +1 331 307 8784</li>
+              <li>Email: detailswithprecision@gmail.com</li>
+              <li>Mon–Sun 3:20pm–8pm</li>
             </ul>
           </div>
 
@@ -32,9 +32,7 @@ export default function Footer() {
           <div>
             <h3 className="font-heading text-white text-lg">Follow us</h3>
             <div className="mt-4 flex items-center gap-3 text-muted-foreground">
-              <Link href="#" aria-label="Instagram" className="hover:text-white transition-colors"><FaInstagram size={22} /></Link>
-              <Link href="#" aria-label="Facebook" className="hover:text-white transition-colors"><FaFacebook size={22} /></Link>
-              <Link href="#" aria-label="TikTok" className="hover:text-white transition-colors"><FaTiktok size={22} /></Link>
+              <Link href="https://www.instagram.com/pr3cisiondetails/" aria-label="Instagram" className="hover:text-white transition-colors"><FaInstagram size={22} /></Link>
             </div>
           </div>
         </div>

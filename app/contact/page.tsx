@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import { Button } from "../components/shadcn/button";
+import Reveal from "../components/Reveal";
 
 // export const metadata = {
 //   title: "Contact | Precision Details",
@@ -41,7 +42,7 @@ export default function ContactPage() {
         <div className="mx-auto max-w-7xl px-6 py-16 lg:px-8">
           <div className="grid lg:grid-cols-2 gap-10 items-stretch">
             {/* Form */}
-            <div className="rounded-2xl border bg-card/60 p-6 shadow-lg backdrop-blur-sm">
+            <Reveal className="rounded-2xl border bg-card/60 p-6 shadow-lg backdrop-blur-sm">
               <h1 className="font-heading text-3xl text-white">Contact us</h1>
               <p className="mt-2 text-sm text-muted-foreground">
                 Have questions or ready to book? Send us a message and we’ll respond fast.
@@ -73,21 +74,21 @@ export default function ContactPage() {
                 <Button type="submit" className="rounded-full">Send message</Button>
                 {status && <p className="text-sm text-primary">{status}</p>}
               </form>
-            </div>
+            </Reveal>
 
             {/* Sidebar */}
-            <div className="relative rounded-2xl border bg-card/60 p-6 shadow-lg backdrop-blur-sm overflow-hidden">
+            <Reveal className="relative rounded-2xl border bg-card/60 p-6 shadow-lg backdrop-blur-sm overflow-hidden">
               <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-primary/20 blur-2xl" />
               <h2 className="font-heading text-2xl text-white">Contact Details</h2>
               <div className="mt-6 grid gap-3 text-sm text-muted-foreground">
-                <p><span className="text-white">Phone:</span> (555) 123-4567</p>
-                <p><span className="text-white">Email:</span> hello@precisiondetails.com</p>
-                <p><span className="text-white">Hours:</span> Mon–Sat 8am–6pm</p>
+                <p><span className="text-white">Phone:</span> 331 307 8784</p>
+                <p><span className="text-white">Email:</span> detailswithprecision@gmail.com</p>
+                <p><span className="text-white">Hours:</span> Mon–Sun 3:20pm–8pm</p>
               </div>
               <div className="mt-8 relative h-48 rounded-lg overflow-hidden">
                 <Image src="/branding/logo-secondary.png" alt="Studio" fill className="object-contain" />
               </div>
-            </div>
+            </Reveal>
           </div>
         </div>
       </section>

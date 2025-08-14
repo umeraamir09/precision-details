@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
-import { Bebas_Neue, Poppins, Archivo_Black} from "next/font/google";
+import {  Poppins, Sora} from "next/font/google";
 import "./globals.css";
 import Header from "./components/Header";
 import Footer from "./components/footer/Footer";
 
-const bebasNeue = Archivo_Black({
-  weight: "400",
+const sora = Sora({
+  weight: "800",
   style: "normal",
-  variable: "--font-archivo-black",
+  variable: "--font-sora",
   subsets: ["latin"],
 });
 

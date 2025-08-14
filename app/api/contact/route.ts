@@ -23,7 +23,7 @@ export async function POST(request: Request) {
     // Send to site owner
     const { error } = await resend.emails.send({
       from: 'Precision Details <noreply@umroo.art>',
-      to: process.env.CONTACT_TO?.split(',') || ['umroo.aamir@gmail.com'],
+      to: process.env.CONTACT_TO?.split(',') || ['detailswithprecision@gmail.com'],
       subject: 'New Contact Form Submission',
       react: EmailTemplate({ firstName, lastName, email, phone, message, logoUrl }),
     });
