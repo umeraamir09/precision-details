@@ -45,7 +45,7 @@ export default function Home() {
               </p>
 
               <div
-                className="mt-10"
+                className="mt-10 flex space-x-0.5"
               >
                 <motion.div
                   animate={
@@ -63,6 +63,9 @@ export default function Home() {
                     <Link href="/pricing">Get Started</Link>
                   </Button>
                 </motion.div>
+                <Button asChild className="px-6 sm:px-8 py-4 sm:py-6 text-white text-base sm:text-lg rounded-full ml-5">
+                  <Link href="#about">About</Link>
+                </Button>
               </div>
             </div>
           </div>
@@ -70,7 +73,7 @@ export default function Home() {
       </section>
       {/* Hero */}
       <></>
-      <section className="relative isolate overflow-hidden">
+      <section className="relative isolate overflow-hidden" id="about">
         <div className="mx-auto max-w-7xl px-6 py-20 lg:px-8">
           <div className="mx-auto max-w-2xl text-center">
             <h1 className="font-heading tracking-tight text-4xl sm:text-5xl md:text-6xl text-white">

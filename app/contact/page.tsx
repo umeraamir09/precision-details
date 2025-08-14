@@ -84,8 +84,8 @@ export default function ContactPage() {
                 <p><span className="text-white">Email:</span> hello@precisiondetails.com</p>
                 <p><span className="text-white">Hours:</span> Mon–Sat 8am–6pm</p>
               </div>
-              <div className="mt-8 relative h-48 rounded-lg overflow-hidden border">
-                <Image src="/gallery-2.jpg" alt="Studio" fill className="object-cover" />
+              <div className="mt-8 relative h-48 rounded-lg overflow-hidden">
+                <Image src="/branding/logo-secondary.png" alt="Studio" fill className="object-contain" />
               </div>
             </div>
           </div>
