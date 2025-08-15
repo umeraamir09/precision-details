@@ -75,7 +75,7 @@ export default function Home() {
               </div>
 
               <div className="flex-1 text-center sm:text-left">
-                <h3 className="text-xl font-semibold text-white">Don't miss out</h3>
+                <h3 className="text-xl font-semibold text-white">Don&apos;t miss out</h3>
                 <p className="mt-1 text-sm text-muted-foreground">Limited-time seasonal promo — book now to secure your spot and save on premium detailing.</p>
               </div>
 
@@ -147,8 +147,8 @@ export default function Home() {
             <h1 className="font-heading tracking-tight text-4xl sm:text-5xl md:text-6xl text-white">
               <span className="text-primary">Detailing</span> that puts your car in the spotlight
             </h1>
-            <p className="mt-6 text-base sm:text-lg text-muted-foreground">
-              We bring passion, precision, and premium products together to restore and protect your vehicle's finish. From daily drivers to weekend exotics—your car deserves better than basic.
+              <p className="mt-6 text-base sm:text-lg text-muted-foreground">
+              We bring passion, precision, and premium products together to restore and protect your vehicle&apos;s finish. From daily drivers to weekend exoticsyour car deserves better than basic.
             </p>
             <div className="mt-10 flex items-center justify-center gap-x-4">
               <Button asChild className="rounded-full">

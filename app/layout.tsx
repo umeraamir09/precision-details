@@ -30,7 +30,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`font-primary dark antialiased min-h-svh flex flex-col`}>
+      <body className={`${sora.variable} ${poppins.variable} font-primary dark antialiased min-h-svh flex flex-col`}>
         <Header />
         <div className="flex-1">
           {children}

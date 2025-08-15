@@ -23,7 +23,7 @@ export default function ContactPage() {
       const json = await res.json();
       console.log(json);
       if (!res.ok) throw new Error(json.error || 'Failed to send');
-      setStatus("Thanks! We'll get back to you shortly.");
+  setStatus("Thanks! We\'ll get back to you shortly.");
       form.reset();
     } catch (err) {
       console.error(err);
@@ -39,7 +39,7 @@ export default function ContactPage() {
             <Reveal className="rounded-2xl border bg-card/60 p-6 shadow-lg backdrop-blur-sm">
               <h1 className="font-heading text-3xl text-white">Contact us</h1>
               <p className="mt-2 text-sm text-muted-foreground">
-                Have questions or ready to book? Send us a message and we'll respond fast.
+                Have questions or ready to book? Send us a message and we&apos;ll respond fast.
               </p>
 
               <form onSubmit={onSubmit} className="mt-6 grid grid-cols-1 gap-4">
