@@ -39,7 +39,7 @@ export default function ContactPage() {
             <Reveal className="rounded-2xl border bg-card/60 p-6 shadow-lg backdrop-blur-sm">
               <h1 className="font-heading text-3xl text-white">Contact us</h1>
               <p className="mt-2 text-sm text-muted-foreground">
-                Have questions or ready to book? Send us a message and we’ll respond fast.
+                Have questions or ready to book? Send us a message and we'll respond fast.
               </p>
 
               <form onSubmit={onSubmit} className="mt-6 grid grid-cols-1 gap-4">
@@ -76,7 +76,7 @@ export default function ContactPage() {
               <div className="mt-6 grid gap-3 text-sm text-muted-foreground">
                 <p><span className="text-white">Phone:</span> 331 307 8784</p>
                 <p><span className="text-white">Email:</span> detailswithprecision@gmail.com</p>
-                <p><span className="text-white">Hours:</span> Mon–Sun 3:20pm–8pm</p>
+                <p><span className="text-white">Hours:</span> Mon–Fri 3:30pm–8pm; Sat-Sun 9am–8pm</p>
               </div>
               <div className="mt-8 relative h-48 rounded-lg overflow-hidden">
                 <Image src="/branding/logo-secondary.png" alt="Studio" fill className="object-contain" />
