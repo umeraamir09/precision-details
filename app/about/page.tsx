@@ -19,7 +19,7 @@ export default function AboutPage() {
                 <span className="text-primary">Detailing</span> that puts your car in the spotlight
               </h1>
               <p className="mt-6 text-base sm:text-lg text-muted-foreground">
-                We bring passion, precision, and premium products together to restore and protect your vehicle's finish. From daily drivers to weekend exotics—your car deserves better than basic.
+                We bring passion, precision, and premium products together to restore and protect your vehicle&apos;s finish. From daily drivers to weekend exotics—your car deserves better than basic.
               </p>
             </Reveal>
             <div className="mt-10 flex items-center justify-center gap-x-4">
