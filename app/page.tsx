@@ -5,10 +5,28 @@ import { Button } from "./components/shadcn/button";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import Reveal from "./components/Reveal";
+import BannerCarousel from "./components/BannerCarousel";
 
 export default function Home() {
   const [shake, setShake] = useState(false);
+  const [showPromo, setShowPromo] = useState(false);
+
+  // Show promo modal after 1 second
+  useEffect(() => {
+    const t = setTimeout(() => setShowPromo(true), 1000);
+    return () => clearTimeout(t);
+  }, []);
+
+  // Close on Escape
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setShowPromo(false);
+    }
+    if (showPromo) window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [showPromo]);
 
   // Only run shake effect on client
   useEffect(() => {
@@ -22,11 +40,63 @@ export default function Home() {
 
   return (
     <div>
+  <BannerCarousel />
+      {/* Promo modal (appears 1s after load) */}
+      {showPromo && typeof document !== "undefined" && createPortal(
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 flex items-center justify-center px-4"
+          aria-hidden={!showPromo}
+        >
+          <div
+            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+            onClick={() => setShowPromo(false)}
+          />
+
+          <motion.div
+            initial={{ y: 16, opacity: 0, scale: 0.98 }}
+            animate={{ y: 0, opacity: 1, scale: 1 }}
+            transition={{ type: "spring", stiffness: 300, damping: 25 }}
+            role="dialog"
+            aria-modal="true"
+            className="relative w-full max-w-xl mx-auto rounded-2xl bg-gradient-to-r from-[#111111] to-[#0b0b0b] border border-white/6 p-6 shadow-2xl"
+          >
+            <button
+              onClick={() => setShowPromo(false)}
+              aria-label="Close promotion"
+              className="absolute top-4 right-4 text-white/70 hover:text-white"
+            >
+              ✕
+            </button>
+
+            <div className="flex flex-col sm:flex-row items-center gap-6">
+              <div className="flex-shrink-0 bg-gradient-to-tr from-primary to-[#ffb37a] p-4 rounded-xl">
+                <div className="text-3xl sm:text-4xl font-heading font-bold text-white">20% OFF</div>
+                <div className="text-xs text-white/90 mt-1">through Aug – Nov</div>
+              </div>
+
+              <div className="flex-1 text-center sm:text-left">
+                <h3 className="text-xl font-semibold text-white">Don’t miss out</h3>
+                <p className="mt-1 text-sm text-muted-foreground">Limited-time seasonal promo — book now to secure your spot and save on premium detailing.</p>
+              </div>
+
+              <div className="flex-shrink-0">
+                <Button asChild className="rounded-full px-4 py-2">
+                  <Link href="/pricing">Book now</Link>
+                </Button>
+              </div>
+            </div>
+          </motion.div>
+        </motion.div>,
+        document.body
+      )}
       <section>
         <div className="relative w-svw min-h-[calc(100svh-4rem)] pt-16">
           <Image
             src="/bg-hero.png"
-            alt="Precision Details background"
+            alt="Precision Details background ee"
             fill
             priority
             className="object-cover"
@@ -124,49 +194,6 @@ export default function Home() {
             </p>
           </div>
         </div>
-      {/* Video showcase */}
-      <section className="mx-auto max-w-7xl px-6 py-16 lg:px-8">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
-          <div className="order-1">
-            <Reveal>
-              <h2 className="font-heading text-3xl sm:text-4xl text-white">See the finished - real results</h2>
-              <p className="mt-4 text-muted-foreground">
-                Watch our final detailing process and the transformation in motion. Professional prep, careful correction, and a show-ready finish.
-              </p>
-              <div className="mt-6 flex items-center gap-x-4">
-                <Button variant="outline" asChild className="rounded-full">
-                  <Link href="/pricing">Packages</Link>
-                </Button>
-              </div>
-            </Reveal>
-          </div>
-          
-          <div className="order-2">
-            <Reveal>
-              <div className="relative rounded-xl overflow-hidden shadow-xl bg-black">
-                <video
-                  controls
-                  playsInline
-                  preload="metadata"
-                  poster="/gallery-1.jpg"
-                  className="w-full h-auto max-h-[520px] object-contain"
-                  aria-label="Showcase of finished car detailing"
-                >
-                  {/* Prefer WebM for Firefox and modern browsers, fall back to MP4 */}
-                  <source src="/showcase.webm" type="video/webm" />
-                  <source src="/showcase.mp4" type="video/mp4" />
-                  {/* Fallback for very old browsers or if codecs aren't supported */}
-                  Your browser does not support embedded videos. You can
-                  <a href="/showcase.mp4" className="underline ml-1">download the video</a>
-                  .
-                </video>
-                <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-black/40 via-transparent to-transparent" />
-              </div>
-              <p className="mt-3 text-sm text-muted-foreground">Tip: use fullscreen for a closer look at the finish.</p>
-            </Reveal>
-          </div>
-        </div>
-      </section>
       </section>
     </div>
   );
