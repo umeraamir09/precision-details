@@ -76,7 +76,7 @@ export default function ContactPage() {
               <div className="mt-6 grid gap-3 text-sm text-muted-foreground">
                 <p><span className="text-white">Phone:</span> 331 307 8784</p>
                 <p><span className="text-white">Email:</span> detailswithprecision@gmail.com</p>
-                <p><span className="text-white">Hours:</span> Mon–Fri 3:30pm–8pm; Sat-Sun 9am–8pm</p>
+                <p><span className="text-white">Hours:</span> Mon-Fri 3:30pm-8pm; Sat-Sun 9am-8pm</p>
               </div>
               <div className="mt-8 relative h-48 rounded-lg overflow-hidden">
                 <Image src="/branding/logo-secondary.png" alt="Studio" fill className="object-contain" />

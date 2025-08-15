@@ -71,11 +71,11 @@ export default function Home() {
             <div className="flex flex-col sm:flex-row items-center gap-6">
               <div className="flex-shrink-0 bg-gradient-to-tr from-primary to-[#ffb37a] p-4 rounded-xl">
                 <div className="text-3xl sm:text-4xl font-heading font-bold text-white">20% OFF</div>
-                <div className="text-xs text-white/90 mt-1">through Aug – Nov</div>
+                <div className="text-xs text-white/90 mt-1">through Aug - Nov</div>
               </div>
 
               <div className="flex-1 text-center sm:text-left">
-                <h3 className="text-xl font-semibold text-white">Don’t miss out</h3>
+                <h3 className="text-xl font-semibold text-white">Don't miss out</h3>
                 <p className="mt-1 text-sm text-muted-foreground">Limited-time seasonal promo — book now to secure your spot and save on premium detailing.</p>
               </div>
 
@@ -148,7 +148,7 @@ export default function Home() {
               <span className="text-primary">Detailing</span> that puts your car in the spotlight
             </h1>
             <p className="mt-6 text-base sm:text-lg text-muted-foreground">
-              We bring passion, precision, and premium products together to restore and protect your vehicle’s finish. From daily drivers to weekend exotics—your car deserves better than basic.
+              We bring passion, precision, and premium products together to restore and protect your vehicle's finish. From daily drivers to weekend exotics—your car deserves better than basic.
             </p>
             <div className="mt-10 flex items-center justify-center gap-x-4">
               <Button asChild className="rounded-full">
