@@ -66,7 +66,6 @@ export default function Onboarding() {
   };
   const prevStep = () => setStep((s) => Math.max(s - 1, 0));
 
-  // Cal.com embed with prefilled user info
   const calComUrl = `https://cal.com/precisiondetails?name=${encodeURIComponent(form.name)}&email=${encodeURIComponent(form.email)}&phone=${encodeURIComponent(form.phone)}`;
   const calComEmbed = (
     <iframe
@@ -81,7 +80,6 @@ export default function Onboarding() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#e0e7ff] via-white to-[#f1f5f9] px-3 py-8">
       <div className="w-full max-w-3xl bg-white rounded-2xl shadow-2xl p-6 md:p-10 flex flex-col gap-6 md:gap-8 border border-blue-100">
-        {/* Header + Stepper */}
         <div className="flex flex-col gap-4">
           <h1 className="text-3xl md:text-4xl font-extrabold text-[#1e293b] tracking-tight">
             Book Your Appointment
@@ -260,7 +258,6 @@ export default function Onboarding() {
                   type="button"
                   className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-semibold shadow transition-all duration-200"
                   onClick={() => {
-                    // You can send this to an API or Cal.com webhook if needed
                     alert("Booking confirmed! We'll reach out with details.");
                   }}
                 >

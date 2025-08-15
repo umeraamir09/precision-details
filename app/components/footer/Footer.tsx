@@ -8,7 +8,6 @@ export default function Footer() {
     <footer className="mt-20 border-t bg-background/60">
       <div className="mx-auto max-w-7xl px-6 py-12 lg:px-8">
         <div className="grid gap-10 md:grid-cols-4">
-          {/* Brand & Newsletter */}
           <div className="md:col-span-2">
             <div className="flex items-center gap-3">
               <Image src="/branding/logo.png" alt="Precision Details" width={140} height={48} />
@@ -18,7 +17,6 @@ export default function Footer() {
             </p>
           </div>
 
-          {/* Contact */}
           <div>
             <h3 className="font-heading text-white text-lg">Contact</h3>
             <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
@@ -28,7 +26,6 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Socials */}
           <div>
             <h3 className="font-heading text-white text-lg">Follow us</h3>
             <div className="mt-4 flex items-center gap-3 text-muted-foreground">

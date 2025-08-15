@@ -13,13 +13,11 @@ export default function Home() {
   const [shake, setShake] = useState(false);
   const [showPromo, setShowPromo] = useState(false);
 
-  // Show promo modal after 1 second
   useEffect(() => {
     const t = setTimeout(() => setShowPromo(true), 1000);
     return () => clearTimeout(t);
   }, []);
 
-  // Close on Escape
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") setShowPromo(false);
@@ -28,20 +26,19 @@ export default function Home() {
     return () => window.removeEventListener("keydown", onKey);
   }, [showPromo]);
 
-  // Only run shake effect on client
+
   useEffect(() => {
     if (typeof window === "undefined") return;
     const interval = setInterval(() => {
       setShake(true);
-      setTimeout(() => setShake(false), 500); // duration of shake
-    }, 5000); // every 5 seconds
+      setTimeout(() => setShake(false), 500); 
+    }, 5000);
     return () => clearInterval(interval);
   }, []);
 
   return (
     <div>
   <BannerCarousel />
-      {/* Promo modal (appears 1s after load) */}
       {showPromo && typeof document !== "undefined" && createPortal(
         <motion.div
           initial={{ opacity: 0 }}
@@ -101,7 +98,6 @@ export default function Home() {
             priority
             className="object-cover"
           />
-          {/* Overlay for darkening effect (fade in on enter) */}
           <div
             className="absolute inset-0 bg-black/50 pointer-events-none"
           />
@@ -144,9 +140,8 @@ export default function Home() {
           </div>
         </div>
       </section>
-      {/* Hero */}
       <></>
-      <section className="relative isolate overflow-hidden" id="about">
+  <section className="relative isolate overflow-hidden" id="about">
         <div className="mx-auto max-w-7xl px-6 py-20 lg:px-8">
           <div className="mx-auto max-w-2xl text-center">
             <h1 className="font-heading tracking-tight text-4xl sm:text-5xl md:text-6xl text-white">
@@ -170,7 +165,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Story + Imagery */}
       <section className="mx-auto max-w-7xl px-6 py-16 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
           <div className="grid grid-cols-2 gap-4 order-2 lg:order-1">

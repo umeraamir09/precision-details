@@ -8,7 +8,6 @@ export default function BannerCarousel() {
 
   return (
     <div className="w-full bg-gradient-to-r from-primary/95 to-[#ffb37a] text-white overflow-hidden">
-      {/* Inline styles for marquee animation */}
       <style>{`
         .pd-marquee { display: flex; align-items: center; gap: 1rem; white-space: nowrap; }
         .pd-marquee__track { display: inline-flex; gap: 3rem; animation: pd-marquee 18s linear infinite; }
@@ -28,7 +27,6 @@ export default function BannerCarousel() {
                 <span className="pd-marquee__item">{message}</span>
                 <span className="pd-marquee__item">{message}</span>
               </div>
-              {/* duplicate track to ensure smooth loop on wide screens */}
               <div className="pd-marquee__track" aria-hidden="true">
                 <span className="pd-marquee__item">{message}</span>
                 <span className="pd-marquee__item">{message}</span>

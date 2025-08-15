@@ -6,7 +6,7 @@ export interface EmailTemplateProps {
   email: string;
   phone?: string;
   message: string;
-  logoUrl?: string; // absolute URL recommended (e.g., https://your-domain.com/branding/logo.png)
+  logoUrl?: string;
 }
 
 export function EmailTemplate({ firstName, lastName, email, phone, message, logoUrl }: EmailTemplateProps) {

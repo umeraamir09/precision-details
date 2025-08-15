@@ -11,7 +11,6 @@ export const metadata = {
 export default function AboutPage() {
   return (
     <main className="min-h-svh bg-background">
-      {/* Hero */}
       <section className="relative isolate overflow-hidden">
         <div className="mx-auto max-w-7xl px-6 py-20 lg:px-8">
           <div className="mx-auto max-w-2xl text-center">
@@ -38,7 +37,6 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* Story + Imagery */}
       <section className="mx-auto max-w-7xl px-6 py-16 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
           <Reveal className="grid grid-cols-2 gap-4 order-2 lg:order-1">

@@ -18,9 +18,7 @@ export async function POST(request: Request) {
     }
 
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || process.env.VERCEL_PROJECT_PRODUCTION_URL || '';
-    const logoUrl = 'https://i.ibb.co/RGN01wZh/Artboard-1072x72.png';
-
-    // Send to site owner
+  const logoUrl = 'https://i.ibb.co/RGN01wZh/Artboard-1072x72.png';
     const { error } = await resend.emails.send({
       from: 'Precision Details <noreply@umroo.art>',
       to: process.env.CONTACT_TO?.split(',') || ['detailswithprecision@gmail.com'],
@@ -32,7 +30,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Failed to send email' }, { status: 500 });
     }
 
-    // Send confirmation to customer
     await resend.emails.send({
       from: 'Precision Details <noreply@umroo.art>',
       to: [email],

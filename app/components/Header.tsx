@@ -22,7 +22,6 @@ const Header = () => {
           <Image src="/branding/logo.png" alt="Logo" width={130} height={80} className="h-auto w-[120px] sm:w-[140px]" />
         </Link>
 
-        {/* Desktop nav */}
         <nav className="ml-auto hidden md:flex items-center gap-5">
           <Link href="/" className="text-sm lg:text-base">Home</Link>
           <Link href="/pricing" className="text-sm lg:text-base">Pricing</Link>
@@ -32,7 +31,6 @@ const Header = () => {
           </Button>
         </nav>
 
-        {/* Mobile toggle */}
         <button
           aria-label="Toggle menu"
           className="ml-auto md:hidden inline-flex items-center justify-center rounded-md border bg-background/70 p-2"
@@ -42,7 +40,6 @@ const Header = () => {
         </button>
       </div>
 
-      {/* Mobile menu panel */}
       {open && (
         <div className="md:hidden border-t bg-background">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-4 flex flex-col gap-2">
