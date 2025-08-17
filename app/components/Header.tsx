@@ -18,6 +18,7 @@ const Header = () => {
           <Link href="/" className="text-sm lg:text-base">Home</Link>
           <Link href="/pricing" className="text-sm lg:text-base">Pricing</Link>
           <Link href={'/contact'} className="text-sm lg:text-base">Contact</Link>
+          <Link href={'#about'}>About</Link>
           <Button asChild className="m-0 text-white rounded-full">
             <Link href="/pricing">Book Now</Link>
           </Button>

@@ -131,12 +131,9 @@ export default function Home() {
                   style={{ transformOrigin: "50% 50% 0px" }}
                 >
                       <Button asChild className="px-6 sm:px-8 py-4 sm:py-6 text-white text-base sm:text-lg rounded-full">
-                        <Link href="/pricing">Get Started</Link>
+                        <Link href="/pricing">Book Now</Link>
                       </Button>
                 </motion.div>
-                <Button asChild className="px-6 sm:px-8 py-4 sm:py-6 text-white text-base sm:text-lg rounded-full ml-5">
-                  <Link href="#about">About</Link>
-                </Button>
               </div>
             </div>
           </div>
