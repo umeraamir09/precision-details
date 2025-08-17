@@ -1,57 +1,12 @@
 import Link from "next/link";
 import { Button } from "../components/shadcn/button";
 import Reveal from "../components/Reveal";
+import { tiers } from "@/lib/tiers";
 
 export const metadata = {
   title: "Pricing | Precision Details",
   description: "Choose the perfect detailing package for your car.",
 };
-
-const tiers = [
-  {
-    name: "Bronze",
-    price: 119,
-    period: "per car",
-    link: "https://cal.com/aayan-imran-arkh7f/bronze-package",
-    features: [
-      "Single coat foam wash with contact wash",
-      "Full interior clean",
-      "Tire Shine",
-      "Swirl-free windows",
-    ],
-  cta: "Book Now",
-    highlight: false,
-  },
-  {
-    name: "Silver",
-    price: 149,
-    period: "per car",
-    link: "https://cal.com/aayan-imran-arkh7f/silver-package",
-    features: [
-      "Double coat foam wash with contact wash",
-      "Full interior clean",
-      "Interior shine",
-      "Trunk clean",
-      "Tire shine",
-      "Swirl-free windows",
-    ],
-  cta: "Book Now",
-    highlight: true,
-  },
-  {
-    name: "Gold",
-    price: 179,
-    period: "per car",
-    link: "https://cal.com/aayan-imran-arkh7f/gold-package",
-    features: [
-      "Everything in Silver",
-      "Engine Bay Cleaning",
-      "2-4 weeks of paint protection from wax",
-    ],
-  cta: "Book Now",
-    highlight: false,
-  },
-];
 
 export default function PricingPage() {
   return (
@@ -87,7 +42,7 @@ export default function PricingPage() {
                 ))}
               </ul>
               <Button asChild className="mt-8 w-full rounded-full">
-                <Link href={tier.link}>{tier.cta}</Link>
+                <Link href={`/booking/${tier.slug}`}>{tier.cta ?? 'Book Now'}</Link>
               </Button>
               </div>
             </Reveal>

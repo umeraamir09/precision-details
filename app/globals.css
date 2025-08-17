@@ -175,3 +175,24 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+.calendar-custom {
+  /* ensure SVG icons use the theme primary color */
+  color: var(--color-primary);
+
+  svg {
+    color: var(--color-primary);
+    fill: currentColor;
+    stroke: currentColor;
+    display: inline-block;
+    vertical-align: middle;
+    width: 1em;
+    height: 1em;
+  }
+
+  /* catch child shapes */
+  svg * {
+    fill: currentColor;
+    stroke: currentColor;
+  }
+}
