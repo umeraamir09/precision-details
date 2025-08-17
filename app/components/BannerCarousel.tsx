@@ -1,7 +1,5 @@
 "use client"
 import React from "react";
-import Link from "next/link";
-import { Button } from "./shadcn/button";
 
 export default function BannerCarousel() {
   const message = "BIG SALE — 20% OFF FROM AUG - NOV — BOOK NOW";
@@ -35,7 +33,6 @@ export default function BannerCarousel() {
               </div>
             </div>
           </div>
-
         </div>
       </div>
     </div>

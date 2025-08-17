@@ -4,7 +4,7 @@ import Image from "next/image";
 import { Button } from "./components/shadcn/button";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Reveal from "./components/Reveal";
 import BannerCarousel from "./components/BannerCarousel";
@@ -12,6 +12,7 @@ import BannerCarousel from "./components/BannerCarousel";
 export default function Home() {
   const [shake, setShake] = useState(false);
   const [showPromo, setShowPromo] = useState(false);
+  const promoRootRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const t = setTimeout(() => setShowPromo(true), 1000);
@@ -38,8 +39,9 @@ export default function Home() {
 
   return (
     <div>
+      <div id="promo-root" ref={promoRootRef} />
   <BannerCarousel />
-      {showPromo && typeof document !== "undefined" && createPortal(
+  {showPromo && typeof document !== "undefined" && promoRootRef.current && createPortal(
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -86,8 +88,8 @@ export default function Home() {
               </div>
             </div>
           </motion.div>
-        </motion.div>,
-        document.body
+  </motion.div>,
+  promoRootRef.current
       )}
       <section>
         <div className="relative w-svw min-h-[calc(100svh-4rem)] pt-16">
@@ -140,7 +142,7 @@ export default function Home() {
           </div>
         </div>
       </section>
-      <></>
+      
   <section className="relative isolate overflow-hidden" id="about">
         <div className="mx-auto max-w-7xl px-6 py-20 lg:px-8">
           <div className="mx-auto max-w-2xl text-center">

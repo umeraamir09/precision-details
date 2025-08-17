@@ -9,8 +9,10 @@ export function BookingEmailToOwner(props: {
   date: string;
   time: string;
   logoUrl?: string;
+  locationType?: 'my' | 'shop';
+  locationAddress?: string | null;
 }) {
-  const { name, email, phone, notes, packageName, date, time, logoUrl } = props;
+  const { name, email, phone, notes, packageName, date, time, logoUrl, locationType, locationAddress } = props;
   return (
     <div style={{ backgroundColor: '#0f0e0d', color: '#ffffff', fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', Arial, 'Noto Sans', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'", padding: '24px' }}>
       <table role="presentation" width="100%" cellPadding={0} cellSpacing={0} style={{ maxWidth: 640, margin: '0 auto', backgroundColor: '#151311', borderRadius: 16, overflow: 'hidden', border: '1px solid #2a2623' }}>
@@ -62,6 +64,16 @@ export function BookingEmailToOwner(props: {
                     <td style={cellValueStyle}>{time}</td>
                   </tr>
                   <tr>
+                    <td style={cellLabelStyle}>Location</td>
+                    <td style={cellValueStyle}>{locationType === 'shop' ? 'Precision Details (shop)' : 'Customer address'}</td>
+                  </tr>
+                  {locationType === 'my' && (
+                    <tr>
+                      <td style={{ ...cellLabelStyle, verticalAlign: 'top' }}>Address</td>
+                      <td style={{ ...cellValueStyle, whiteSpace: 'pre-wrap' }}>{locationAddress || '—'}</td>
+                    </tr>
+                  )}
+                  <tr>
                     <td style={{ ...cellLabelStyle, verticalAlign: 'top' }}>Notes</td>
                     <td style={{ ...cellValueStyle, whiteSpace: 'pre-wrap' }}>{notes || '—'}</td>
                   </tr>
@@ -80,8 +92,14 @@ export function BookingEmailToOwner(props: {
   );
 }
 
-export function BookingEmailToCustomer(props: { name: string; packageName: string; date: string; time: string; logoUrl?: string; }) {
-  const { name, packageName, date, time, logoUrl } = props;
+export function BookingEmailToCustomer(props: { name: string; packageName: string; date: string; time: string; logoUrl?: string; locationType?: 'my' | 'shop'; locationAddress?: string | null; }) {
+  const { name, packageName, date, time, logoUrl, locationType, locationAddress } = props;
+  const shop = {
+    name: process.env.SHOP_NAME || 'Precision Details',
+    phone: process.env.SHOP_PHONE || '331-307-8784',
+    email: process.env.SHOP_EMAIL || 'contact@precisiondetails.co',
+    address: process.env.SHOP_ADDRESS || '1234 Detailing Ave, Suite 200, Chicago, IL 60601',
+  };
   return (
     <div style={{ backgroundColor: '#0f0e0d', color: '#ffffff', fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', Arial, 'Noto Sans', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'", padding: '24px' }}>
       <table role="presentation" width="100%" cellPadding={0} cellSpacing={0} style={{ maxWidth: 640, margin: '0 auto', backgroundColor: '#151311', borderRadius: 16, overflow: 'hidden', border: '1px solid #2a2623' }}>
@@ -123,9 +141,19 @@ export function BookingEmailToCustomer(props: { name: string; packageName: strin
                 </tbody>
               </table>
 
-              <div style={{ marginTop: 16, padding: 12, backgroundColor: '#201d1a', border: '1px solid #2a2623', borderRadius: 12, color: '#c0bbb7', fontSize: 12 }}>
-                Have questions? Call 331-307-8784 or email detailswithprecision@gmail.com.
-              </div>
+              {locationType === 'shop' ? (
+                <div style={{ marginTop: 16, padding: 12, backgroundColor: '#201d1a', border: '1px solid #2a2623', borderRadius: 12, color: '#c0bbb7', fontSize: 13 }}>
+                  <div style={{ color: '#ffffff', fontWeight: 700, marginBottom: 6 }}>{shop.name}</div>
+                  <div><strong>Phone:</strong> {shop.phone}</div>
+                  <div><strong>Email:</strong> <a href={`mailto:${shop.email}`} style={linkStyle}>{shop.email}</a></div>
+                  <div><strong>Address:</strong> {shop.address}</div>
+                </div>
+              ) : (
+                <div style={{ marginTop: 16, padding: 12, backgroundColor: '#201d1a', border: '1px solid #2a2623', borderRadius: 12, color: '#c0bbb7', fontSize: 13 }}>
+                  <div style={{ color: '#ffffff', fontWeight: 700, marginBottom: 6 }}>Service location</div>
+                  <div><strong>Your address:</strong> {locationAddress || '—'}</div>
+                </div>
+              )}
             </td>
           </tr>
           <tr>

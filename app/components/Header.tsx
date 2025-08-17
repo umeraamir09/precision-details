@@ -2,15 +2,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
-import { FaAngleDown } from 'react-icons/fa';
 import { FiMenu, FiX } from 'react-icons/fi';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/app/components/shadcn/select"
 import { Button } from "./shadcn/button";
 
 const Header = () => {

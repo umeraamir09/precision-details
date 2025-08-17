@@ -9,6 +9,8 @@
     "lint": "next lint"
   },
   "dependencies": {
+  "jose": "^5.9.6",
+    "@neondatabase/serverless": "^1.0.1",
     "@radix-ui/react-select": "^2.2.5",
     "@radix-ui/react-slot": "^1.2.3",
     "@react-email/render": "^1.2.0",

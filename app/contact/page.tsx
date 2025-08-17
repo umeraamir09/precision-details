@@ -20,10 +20,9 @@ export default function ContactPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
-      const json = await res.json();
-      console.log(json);
+  const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Failed to send');
-  setStatus("Thanks! We\'ll get back to you shortly.");
+  setStatus("Thanks! We'll get back to you shortly.");
       form.reset();
     } catch (err) {
       console.error(err);
@@ -75,7 +74,7 @@ export default function ContactPage() {
               <h2 className="font-heading text-2xl text-white">Contact Details</h2>
               <div className="mt-6 grid gap-3 text-sm text-muted-foreground">
                 <p><span className="text-white">Phone:</span> 331 307 8784</p>
-                <p><span className="text-white">Email:</span> detailswithprecision@gmail.com</p>
+                <p><span className="text-white">Email:</span> contact@precisiondetails.co</p>
                 <p><span className="text-white">Hours:</span> Mon-Fri 3:30pm-8pm; Sat-Sun 9am-8pm</p>
               </div>
               <div className="mt-8 relative h-48 rounded-lg overflow-hidden">

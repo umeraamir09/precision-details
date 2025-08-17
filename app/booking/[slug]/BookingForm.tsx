@@ -1,29 +1,19 @@
-'use client';
+"use client";
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/app/components/shadcn/button';
 import Calendar, { type CalendarProps } from '@/app/components/shadcn/calendar';
 
 function pad(n: number) { return n.toString().padStart(2, '0'); }
 
-const weekDayHours = { start: { h: 15, m: 30 }, end: { h: 20, m: 0 } }; // 3:30pm - 8:00pm
-const weekendHours = { start: { h: 9, m: 0 }, end: { h: 20, m: 0 } }; // 9:00am - 8:00pm
+const weekDayHours = { start: { h: 15, m: 30 }, end: { h: 20, m: 0 } };
+const weekendHours = { start: { h: 9, m: 0 }, end: { h: 20, m: 0 } };
 const SLOT_MINUTES = 30;
 
 function isWeekend(date: Date) {
   const d = date.getDay();
   return d === 0 || d === 6;
-}
-
-function withinOneMonth(date: Date) {
-  const now = new Date();
-  const startOfToday = new Date();
-  startOfToday.setHours(0,0,0,0);
-  const nextMonth = new Date(now);
-  nextMonth.setMonth(now.getMonth() + 1);
-  nextMonth.setHours(23, 59, 59, 999);
-  return date >= startOfToday && date <= nextMonth;
 }
 
 function getSlotsForDate(date: Date) {
@@ -72,7 +62,11 @@ export default function BookingForm({ slug }: { slug: string }) {
   const [date, setDate] = useState<Date | undefined>();
   const [time, setTime] = useState<string | undefined>();
   const [form, setForm] = useState({ name: '', email: '', phone: '', notes: '' });
+  const [locationType, setLocationType] = useState<'my' | 'shop'>('my');
+  const [locationAddress, setLocationAddress] = useState('');
   const [status, setStatus] = useState<string | null>(null);
+  const [errors, setErrors] = useState<{ email?: string; phone?: string } | null>(null);
+  const [bookedDates, setBookedDates] = useState<string[]>([]);
 
   const fromDate = useMemo(() => {
     const d = new Date(); d.setHours(0,0,0,0); return d;
@@ -87,11 +81,21 @@ export default function BookingForm({ slug }: { slug: string }) {
   }, []);
 
   const disabledRules = useMemo<NonNullable<CalendarProps['disabled']>>(
-    () => [
-      { before: fromDate },
-      { after: toDate },
-    ],
-    [fromDate, toDate]
+    () => {
+      const rules: NonNullable<CalendarProps['disabled']> = [
+        { before: fromDate },
+        { after: toDate },
+      ];
+      if (bookedDates.length > 0) {
+        // DayPicker accepts a function in disabled to mark dates
+        const isBooked = (d: Date) => bookedDates.includes(d.toISOString().slice(0, 10));
+        // push predicate directly; CalendarProps['disabled'] allows matcher functions
+        // @ts-expect-error DayPicker typing in our wrapper may not include function matcher explicitly
+        rules.push(isBooked as unknown as NonNullable<CalendarProps['disabled']>[number]);
+      }
+      return rules;
+    },
+    [fromDate, toDate, bookedDates]
   );
 
   const footer = useMemo(() => {
@@ -104,14 +108,37 @@ export default function BookingForm({ slug }: { slug: string }) {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
   }, []);
-  const toMonth = useMemo(() => {
-    const now = new Date();
-    return new Date(now.getFullYear(), now.getMonth() + 1, 1);
-  }, []);
+  
+  useEffect(() => {
+    const controller = new AbortController();
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const f = `${fromDate.getFullYear()}-${pad(fromDate.getMonth() + 1)}-${pad(fromDate.getDate())}`;
+    const t = `${toDate.getFullYear()}-${pad(toDate.getMonth() + 1)}-${pad(toDate.getDate())}`;
+    fetch(`/api/bookings/availability?from=${f}&to=${t}`, { signal: controller.signal })
+      .then(r => r.json())
+      .then((json: { ok?: boolean; dates?: string[] }) => {
+        if (json?.dates && Array.isArray(json.dates)) setBookedDates(json.dates);
+      })
+      .catch(() => {});
+    return () => controller.abort();
+  }, [fromDate, toDate]);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!date || !time) { setStatus('Please select a date and time.'); return; }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const errs: { email?: string; phone?: string } = {};
+    if (!emailRegex.test(form.email)) {
+      errs.email = 'Enter a valid email address.';
+    }
+    if (form.phone && form.phone.trim().length > 0) {
+      const digits = form.phone.replace(/\D/g, '');
+      if (digits.length < 10 || digits.length > 15) {
+        errs.phone = 'Enter a valid phone number.';
+      }
+    }
+    if (Object.keys(errs).length) { setErrors(errs); return; }
+    setErrors(null);
     setStatus('Booking…');
     try {
       const res = await fetch('/api/book', {
@@ -122,6 +149,8 @@ export default function BookingForm({ slug }: { slug: string }) {
           date: date.toISOString().split('T')[0],
           time,
           ...form,
+          locationType,
+          locationAddress: locationType === 'my' ? (locationAddress || null) : null,
         }),
       });
       const json: { ok?: boolean; error?: string } = await res.json();
@@ -136,10 +165,10 @@ export default function BookingForm({ slug }: { slug: string }) {
 
   return (
     <form onSubmit={onSubmit} className="grid gap-8">
-      <div className="grid gap-4">
+  <div className="grid gap-4">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-medium text-white/90">Your details</h3>
-          <span className="text-xs text-muted-foreground">We'll send confirmation here</span>
+          <span className="text-xs text-muted-foreground">We&apos;ll send confirmation here</span>
         </div>
         <div className="h-px w-full bg-gradient-to-r from-transparent via-white/10 to-transparent" />
 
@@ -164,6 +193,7 @@ export default function BookingForm({ slug }: { slug: string }) {
               className="mt-1 w-full rounded-lg border border-white/10 bg-background/60 px-3 py-2 text-sm text-white placeholder:text-muted-foreground/70 outline-none transition focus-visible:border-primary/40 focus-visible:ring-2 focus-visible:ring-primary/20"
               placeholder="you@example.com"
             />
+            {errors?.email && <p className="mt-1 text-xs text-red-400">{errors.email}</p>}
           </div>
           <div className="sm:col-span-2">
             <label className="text-xs text-muted-foreground">Phone</label>
@@ -174,6 +204,7 @@ export default function BookingForm({ slug }: { slug: string }) {
               className="mt-1 w-full rounded-lg border border-white/10 bg-background/60 px-3 py-2 text-sm text-white placeholder:text-muted-foreground/70 outline-none transition focus-visible:border-primary/40 focus-visible:ring-2 focus-visible:ring-primary/20"
               placeholder="(555) 123-4567"
             />
+            {errors?.phone && <p className="mt-1 text-xs text-red-400">{errors.phone}</p>}
           </div>
           <div className="sm:col-span-2">
             <label className="text-xs text-muted-foreground">Notes (optional)</label>
@@ -184,6 +215,38 @@ export default function BookingForm({ slug }: { slug: string }) {
               className="mt-1 w-full rounded-lg border border-white/10 bg-background/60 px-3 py-2 text-sm text-white placeholder:text-muted-foreground/70 outline-none transition focus-visible:border-primary/40 focus-visible:ring-2 focus-visible:ring-primary/20"
               placeholder="Anything else we should know?"
             />
+          </div>
+          <div className="sm:col-span-2">
+            <label className="text-xs text-muted-foreground">Service location</label>
+            <div className="mt-2 grid gap-3">
+              <div className="flex items-center gap-4">
+                <label className="inline-flex items-center gap-2 text-sm text-white">
+                  <input type="radio" name="location" value="my" checked={locationType==='my'} onChange={()=>setLocationType('my')} />
+                  My Location
+                </label>
+                <label className="inline-flex items-center gap-2 text-sm text-white">
+                  <input type="radio" name="location" value="shop" checked={locationType==='shop'} onChange={()=>setLocationType('shop')} />
+                  Precision Details Location
+                </label>
+              </div>
+              {locationType==='my' ? (
+                <input
+                  value={locationAddress}
+                  onChange={(e)=>setLocationAddress(e.target.value)}
+                  required
+                  className="w-full rounded-lg border border-white/10 bg-background/60 px-3 py-2 text-sm text-white placeholder:text-muted-foreground/70 outline-none transition focus-visible:border-primary/40 focus-visible:ring-2 focus-visible:ring-primary/20"
+                  placeholder="Enter your address (street, city, zip)"
+                />
+              ) : (
+                <div className="rounded-lg border border-white/10 bg-background/50 p-4 text-sm text-muted-foreground">
+                  <div className="text-white font-medium">Precision Details</div>
+                  <div>331-307-8784</div>
+                  <div>contact@precisiondetails.co</div>
+                  <div>1234 Detailing Ave, Suite 200, Chicago, IL 60601</div>
+                  <div className="mt-2 text-xs">We&apos;ll include these details in your confirmation email.</div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>

@@ -1,7 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { FaFacebook, FaInstagram, FaTiktok } from "react-icons/fa";
-import { Button } from "../shadcn/button";
+import { FaInstagram } from "react-icons/fa";
 
 export default function Footer() {
   return (
@@ -21,7 +20,7 @@ export default function Footer() {
             <h3 className="font-heading text-white text-lg">Contact</h3>
             <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
               <li>Phone: +1 331 307 8784</li>
-              <li>Email: detailswithprecision@gmail.com</li>
+              <li>Email: contact@precisiondetails.co</li>
               <li>Mon-Fri 3:30pm-8pm; Sat-Sun 9am-8pm</li>
             </ul>
           </div>

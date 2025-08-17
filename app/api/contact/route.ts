@@ -17,8 +17,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || process.env.VERCEL_PROJECT_PRODUCTION_URL || '';
-  const logoUrl = 'https://i.ibb.co/RGN01wZh/Artboard-1072x72.png';
+    const logoUrl = process.env.PUBLIC_BRAND_LOGO_URL || 'https://raw.githubusercontent.com/umeraamir09/precision-details/refs/heads/master/public/branding/logo.png';
     const { error } = await resend.emails.send({
       from: 'Precision Details <noreply@umroo.art>',
       to: process.env.CONTACT_TO?.split(',') || ['detailswithprecision@gmail.com'],
