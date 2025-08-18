@@ -152,7 +152,9 @@ export async function PATCH(req: NextRequest) {
           const [hh, mm] = timeStr.split(':').map(Number);
           const start = `${y}-${toStr(m)}-${toStr(d)}T${toStr(hh)}:${toStr(mm)}:00`;
           const endDate = new Date(y, m - 1, d, hh, mm);
-          endDate.setMinutes(endDate.getMinutes() + 60);
+          const dow = new Date(y, (m || 1) - 1, d || 1).getDay();
+          const isWeekend = dow === 0 || dow === 6;
+          endDate.setMinutes(endDate.getMinutes() + (isWeekend ? 240 : 60));
           const end = `${y}-${toStr(m)}-${toStr(d)}T${toStr(endDate.getHours())}:${toStr(endDate.getMinutes())}:00`;
           const timeZone = process.env.GCAL_TIMEZONE || 'America/Chicago';
 

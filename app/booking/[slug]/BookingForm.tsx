@@ -10,6 +10,7 @@ function pad(n: number) { return n.toString().padStart(2, '0'); }
 const weekDayHours = { start: { h: 15, m: 30 }, end: { h: 20, m: 0 } };
 const weekendHours = { start: { h: 9, m: 0 }, end: { h: 20, m: 0 } };
 const SLOT_MINUTES = 30;
+const WEEKEND_BLOCK_MINUTES = 240; // 4 hours per booking
 
 function isWeekend(date: Date) {
   const d = date.getDay();
@@ -67,6 +68,7 @@ export default function BookingForm({ slug }: { slug: string }) {
   const [status, setStatus] = useState<string | null>(null);
   const [errors, setErrors] = useState<{ email?: string; phone?: string } | null>(null);
   const [bookedDates, setBookedDates] = useState<string[]>([]);
+  const [existingWeekendStarts, setExistingWeekendStarts] = useState<string[]>([]);
 
   const fromDate = useMemo(() => {
     const d = new Date(); d.setHours(0,0,0,0); return d;
@@ -88,7 +90,7 @@ export default function BookingForm({ slug }: { slug: string }) {
       ];
       if (bookedDates.length > 0) {
         // DayPicker accepts a function in disabled to mark dates
-        const isBooked = (d: Date) => bookedDates.includes(d.toISOString().slice(0, 10));
+        const isBooked = (d: Date) => bookedDates.includes(`${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`);
         // push predicate directly; CalendarProps['disabled'] allows matcher functions
         // @ts-expect-error DayPicker typing in our wrapper may not include function matcher explicitly
         rules.push(isBooked as unknown as NonNullable<CalendarProps['disabled']>[number]);
@@ -123,6 +125,23 @@ export default function BookingForm({ slug }: { slug: string }) {
     return () => controller.abort();
   }, [fromDate, toDate]);
 
+  // When a weekend date is selected, fetch existing weekend start times
+  useEffect(() => {
+    if (!date) { setExistingWeekendStarts([]); return; }
+    if (!isWeekend(date)) { setExistingWeekendStarts([]); return; }
+    const controller = new AbortController();
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const d = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+    fetch(`/api/bookings/availability?date=${d}`, { signal: controller.signal })
+      .then(r => r.json())
+      .then((json: { ok?: boolean; type?: 'weekday'|'weekend'; existing?: string[] }) => {
+        if (Array.isArray(json?.existing)) setExistingWeekendStarts(json.existing);
+        else setExistingWeekendStarts([]);
+      })
+      .catch(() => {});
+    return () => controller.abort();
+  }, [date]);
+
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!date || !time) { setStatus('Please select a date and time.'); return; }
@@ -141,12 +160,13 @@ export default function BookingForm({ slug }: { slug: string }) {
     setErrors(null);
     setStatus('Booking…');
     try {
-      const res = await fetch('/api/book', {
+    const res = await fetch('/api/book', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           slug,
-          date: date.toISOString().split('T')[0],
+      // Use local date parts to avoid UTC shifting the selected day
+      date: `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`,
           time,
           ...form,
           locationType,
@@ -290,7 +310,22 @@ export default function BookingForm({ slug }: { slug: string }) {
             <p className="col-span-full text-sm text-muted-foreground">No times — select a date.</p>
           )}
           {slots.map((s) => {
-            const disabledSlot = date ? isSlotPast(date, s) : false;
+            const isWknd = isWeekend(date ?? new Date());
+            // Disable if slot would overlap any existing 4h block (no artificial closing-time cutoff)
+            let weekendOverlap = false;
+            if (isWknd) {
+              const [h, m] = s.split(':').map(Number);
+              const startMin = h * 60 + m;
+              for (const ex of existingWeekendStarts) {
+                const [eh, em] = ex.split(':').map(Number);
+                const es = eh * 60 + em;
+                const ee = es + WEEKEND_BLOCK_MINUTES;
+                const cs = startMin;
+                const ce = cs + WEEKEND_BLOCK_MINUTES;
+                if (cs < ee && es < ce) { weekendOverlap = true; break; }
+              }
+            }
+            const disabledSlot = date ? (isSlotPast(date, s) || weekendOverlap) : false;
             const isSelected = time === s;
             return (
               <button
@@ -315,7 +350,7 @@ export default function BookingForm({ slug }: { slug: string }) {
       </div>
 
       <div className="flex items-center justify-between gap-3">
-        <p className="text-xs text-muted-foreground">By confirming, you agree to our scheduling policy.</p>
+        <p className="text-xs text-muted-foreground"></p>
         <Button type="submit" className="rounded-full px-5">Confirm booking</Button>
       </div>
 

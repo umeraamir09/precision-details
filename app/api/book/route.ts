@@ -7,13 +7,13 @@ import { BookingEmailToCustomer, BookingEmailToOwner } from '@/app/components/bo
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-function toRFC3339(date: string, time: string) {
+function toRFC3339(date: string, time: string, durationMin = 60) {
   const [y, m, d] = date.split('-').map(Number);
   const [hh, mm] = time.split(':').map(Number);
   const toStr = (n: number) => String(n).padStart(2, '0');
   const start = `${y}-${toStr(m)}-${toStr(d)}T${toStr(hh)}:${toStr(mm)}:00`;
   const endDate = new Date(y, m - 1, d, hh, mm);
-  endDate.setMinutes(endDate.getMinutes() + 60);
+  endDate.setMinutes(endDate.getMinutes() + durationMin);
   const end = `${y}-${toStr(m)}-${toStr(d)}T${toStr(endDate.getHours())}:${toStr(endDate.getMinutes())}:00`;
   return { start, end };
 }
@@ -71,16 +71,44 @@ export async function POST(request: Request) {
     if (!tier) return NextResponse.json({ error: 'Invalid package' }, { status: 400 });
 
     
+    // Weekday vs weekend logic
+    const [yy, mm, dd] = date.split('-').map(Number);
+    const dow = new Date(yy, (mm || 1) - 1, dd || 1).getDay(); // 0 Sun, 6 Sat
+    const isWeekend = dow === 0 || dow === 6;
+    const SLOT_MIN = isWeekend ? 240 : 60; // 4h on weekends, 1h placeholder on weekdays
+
     try {
-      const existingSameDay = await db`
-        select id from bookings where date = ${date} and (status != 'cancelled') limit 1
-      ` as unknown as Array<{ id: number }>;
-      if (existingSameDay && existingSameDay.length > 0) {
-        return NextResponse.json({ error: 'This date is no longer available. Please choose another day.' }, { status: 409 });
+      if (!isWeekend) {
+        // For weekdays keep one booking per day
+        const existingSameDay = await db`
+          select id from bookings where date = ${date} and (status != 'cancelled') limit 1
+        ` as unknown as Array<{ id: number }>;
+        if (existingSameDay && existingSameDay.length > 0) {
+          return NextResponse.json({ error: 'This date is no longer available. Please choose another day.' }, { status: 409 });
+        }
+      } else {
+        // On weekends, ensure no 4-hour overlap with existing bookings
+        const rows = await db`
+          select time from bookings where date = ${date} and status != 'cancelled'
+        ` as unknown as Array<{ time: string }>;
+        const toMin = (hhmm: string) => {
+          const [h, m] = hhmm.split(':').map(Number); return h * 60 + m;
+        };
+        const candidateStart = toMin(time);
+        const candidateEnd = candidateStart + SLOT_MIN;
+        for (const r of rows) {
+          if (!r?.time) continue;
+          const s = toMin(typeof r.time === 'string' ? r.time : String(r.time));
+          const e = s + SLOT_MIN;
+          const overlap = candidateStart < e && s < candidateEnd;
+          if (overlap) {
+            return NextResponse.json({ error: 'Selected time overlaps an existing weekend booking. Please pick another slot.' }, { status: 409 });
+          }
+        }
       }
     } catch (e) {
-      
-      console.warn('DB check for same-day booking failed or DB not configured', e);
+      // If DB check fails (local dev without DB), continue but rely on calendar conflict or UI.
+      console.warn('DB availability check failed or DB not configured', e);
     }
 
     
@@ -99,7 +127,7 @@ export async function POST(request: Request) {
     });
 
     const calendar = google.calendar({ version: 'v3', auth: jwt });
-  const { start, end } = toRFC3339(date, time);
+  const { start, end } = toRFC3339(date, time, SLOT_MIN);
   const timeZone = process.env.GCAL_TIMEZONE || 'America/Chicago';
 
   const event = await calendar.events.insert({
@@ -139,7 +167,11 @@ export async function POST(request: Request) {
     } catch (e: unknown) {
       console.error('Failed to persist booking to Neon', e);
       const msg = e instanceof Error ? e.message : (typeof e === 'string' ? e : '');
-      if (msg.includes('uniq_one_booking_per_day')) {
+      if (
+        msg.includes('uniq_one_booking_per_day') ||
+        msg.includes('uniq_one_booking_on_weekdays') ||
+        msg.toLowerCase().includes('duplicate key value')
+      ) {
         return NextResponse.json({ error: 'This date is no longer available. Please choose another day.' }, { status: 409 });
       }
       

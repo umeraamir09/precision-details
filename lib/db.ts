@@ -44,7 +44,20 @@ export async function ensureSchema() {
   `;
   await db`alter table bookings add column if not exists location_type text`;
   await db`alter table bookings add column if not exists location_address text`;
-  await db`create unique index if not exists uniq_one_booking_per_day on bookings (date) where (status != 'cancelled')`;
+  // Allow multiple bookings per email/phone (was previously unique)
+  // Try dropping as constraint (typical name) and as index fallback
+  await db`alter table bookings drop constraint if exists bookings_email_key`;
+  await db`alter table bookings drop constraint if exists bookings_phone_key`;
+  await db`drop index if exists bookings_email_key`;
+  await db`drop index if exists bookings_phone_key`;
+  // Recreate as non-unique indexes for performance
+  await db`create index if not exists idx_bookings_email on bookings (email)`;
+  await db`create index if not exists idx_bookings_phone on bookings (phone)`;
+  // Update the unique index policy:
+  // Previously: one booking per day for all days.
+  // Now: enforce one booking per day only on weekdays (Mon-Fri), allow multiple on weekends.
+  await db`drop index if exists uniq_one_booking_per_day`;
+  await db`create unique index if not exists uniq_one_booking_on_weekdays on bookings (date) where (status != 'cancelled' and extract(dow from date) not in (0,6))`;
 }
 
 export type BookingRow = {
