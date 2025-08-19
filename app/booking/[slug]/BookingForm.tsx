@@ -62,7 +62,7 @@ export default function BookingForm({ slug }: { slug: string }) {
 
   const [date, setDate] = useState<Date | undefined>();
   const [time, setTime] = useState<string | undefined>();
-  const [form, setForm] = useState({ name: '', email: '', phone: '', notes: '' });
+  const [form, setForm] = useState({ name: '', email: '', phone: '', carModel: '', notes: '' });
   const [locationType, setLocationType] = useState<'my' | 'shop'>('my');
   const [locationAddress, setLocationAddress] = useState('');
   const [status, setStatus] = useState<string | null>(null);
@@ -225,6 +225,15 @@ export default function BookingForm({ slug }: { slug: string }) {
               placeholder="(555) 123-4567"
             />
             {errors?.phone && <p className="mt-1 text-xs text-red-400">{errors.phone}</p>}
+          </div>
+          <div className="sm:col-span-2">
+            <label className="text-xs text-muted-foreground">Car model</label>
+            <input
+              value={form.carModel}
+              onChange={(e)=>setForm(v=>({...v,carModel:e.target.value}))}
+              className="mt-1 w-full rounded-lg border border-white/10 bg-background/60 px-3 py-2 text-sm text-white placeholder:text-muted-foreground/70 outline-none transition focus-visible:border-primary/40 focus-visible:ring-2 focus-visible:ring-primary/20"
+              placeholder="e.g. Toyota Camry 2018"
+            />
           </div>
           <div className="sm:col-span-2">
             <label className="text-xs text-muted-foreground">Notes (optional)</label>

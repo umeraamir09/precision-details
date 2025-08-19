@@ -10,6 +10,7 @@ type Booking = {
   name: string;
   email: string;
   phone: string | null;
+  car_model?: string | null;
   notes: string | null;
   date: string;
   time: string;
@@ -22,22 +23,26 @@ export default function BookingEditor({ initial }: { initial: Booking }) {
   const [date, setDate] = useState(initial.date);
   const [time, setTime] = useState(initial.time);
   const [status, setStatus] = useState(initial.status);
+  const [carModel, setCarModel] = useState(initial.car_model || '');
   const [notes, setNotes] = useState(initial.notes || '');
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
   const changed = useMemo(() => (
-    date !== initial.date || time !== initial.time || status !== initial.status || (notes || '') !== (initial.notes || '')
-  ), [date, time, status, notes, initial]);
+    date !== initial.date || time !== initial.time || status !== initial.status || (notes || '') !== (initial.notes || '') || (carModel || '') !== (initial.car_model || '')
+  ), [date, time, status, notes, carModel, initial]);
+
+  type BookingUpdate = Pick<Booking,'date'|'time'|'status'|'notes'> & { car_model?: string };
 
   async function save() {
     setBusy(true); setMsg(null);
     try {
-      const updates: Partial<Pick<Booking,'date'|'time'|'status'|'notes'>> = {};
+      const updates: Partial<BookingUpdate> = {};
       if (date !== initial.date) updates.date = date;
       if (time !== initial.time) updates.time = time;
       if (status !== initial.status) updates.status = status;
       if ((notes || '') !== (initial.notes || '')) updates.notes = notes;
+      if ((carModel || '') !== (initial.car_model || '')) updates.car_model = carModel;
       if (Object.keys(updates).length === 0) { setMsg('No changes'); return; }
       const res = await fetch('/api/bookings', {
         method: 'PATCH',
@@ -118,6 +123,10 @@ export default function BookingEditor({ initial }: { initial: Booking }) {
             <option value="completed">completed</option>
           </select>
         </div>
+      </div>
+      <div>
+        <label className="text-xs text-muted-foreground">Car model</label>
+        <input value={carModel} onChange={(e)=>setCarModel(e.target.value)} className="mt-1 w-full rounded border border-white/10 bg-background/60 px-3 py-2 text-sm text-white" />
       </div>
       <div>
         <label className="text-xs text-muted-foreground">Notes</label>

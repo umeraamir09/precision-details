@@ -36,6 +36,7 @@ type BookingPayload = {
   email: string;
   phone?: string;
   notes?: string;
+  carModel?: string;
   locationType?: 'my' | 'shop';
   locationAddress?: string | null;
 };
@@ -45,7 +46,7 @@ export async function POST(request: Request) {
   
   await ensureSchema();
   const body = (await request.json()) as Partial<BookingPayload>;
-  const { slug, date, time, name, email, phone, notes, locationType, locationAddress } = body;
+  const { slug, date, time, name, email, phone, notes, carModel, locationType, locationAddress } = body;
     if (!slug || !date || !time || !name || !email) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
@@ -134,7 +135,7 @@ export async function POST(request: Request) {
       calendarId,
       requestBody: {
         summary: `${tier.name} - ${name}`,
-        description: `Package: ${tier.name}\nPrice: $${tier.price} ${tier.period}\nEmail: ${email}\nPhone: ${phone || ''}\nNotes: ${notes || ''}\nLocation: ${locationType === 'shop' ? 'Precision Details (shop)' : 'Customer provided'}${locationType === 'my' && locationAddress ? `\nAddress: ${locationAddress}` : ''}`,
+  description: `Package: ${tier.name}\nPrice: $${tier.price} ${tier.period}\nEmail: ${email}\nPhone: ${phone || ''}\nVehicle: ${carModel || ''}\nNotes: ${notes || ''}\nLocation: ${locationType === 'shop' ? 'Precision Details (shop)' : 'Customer provided'}${locationType === 'my' && locationAddress ? `\nAddress: ${locationAddress}` : ''}`,
   start: { dateTime: start, timeZone },
   end: { dateTime: end, timeZone },
       },
@@ -148,21 +149,21 @@ export async function POST(request: Request) {
       from: 'Precision Details <noreply@umroo.art>',
       to: [ownerEmail],
       subject: `New booking: ${tier.name} on ${date} at ${time12}`,
-      react: BookingEmailToOwner({ name, email, phone, notes, packageName: tier.name, date, time: time12, logoUrl, locationType, locationAddress: locationType === 'my' ? locationAddress || null : null }),
+      react: BookingEmailToOwner({ name, email, phone, notes, carModel: carModel || undefined, packageName: tier.name, date, time: time12, logoUrl, locationType, locationAddress: locationType === 'my' ? locationAddress || null : null }),
     });
 
     await resend.emails.send({
       from: 'Precision Details <noreply@umroo.art>',
       to: [email],
       subject: 'Your booking was received',
-      react: BookingEmailToCustomer({ name, packageName: tier.name, date, time: time12, logoUrl, locationType, locationAddress: locationType === 'my' ? locationAddress || null : null }),
+      react: BookingEmailToCustomer({ name, packageName: tier.name, date, time: time12, logoUrl, carModel: carModel || undefined, locationType, locationAddress: locationType === 'my' ? locationAddress || null : null }),
     });
 
     
     try {
       await db`
-        insert into bookings (slug, package_name, price, period, name, email, phone, notes, date, time, status, gcal_event_id, location_type, location_address)
-        values (${slug}, ${tier.name}, ${tier.price}, ${tier.period}, ${name}, ${email}, ${phone || null}, ${notes || null}, ${date}, ${time}, ${'booked'}, ${event.data.id || null}, ${locationType ?? null}, ${locationType === 'my' ? (locationAddress ?? null) : null})
+  insert into bookings (slug, package_name, price, period, name, email, phone, car_model, notes, date, time, status, gcal_event_id, location_type, location_address)
+  values (${slug}, ${tier.name}, ${tier.price}, ${tier.period}, ${name}, ${email}, ${phone || null}, ${carModel || null}, ${notes || null}, ${date}, ${time}, ${'booked'}, ${event.data.id || null}, ${locationType ?? null}, ${locationType === 'my' ? (locationAddress ?? null) : null})
       `;
     } catch (e: unknown) {
       console.error('Failed to persist booking to Neon', e);

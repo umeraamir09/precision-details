@@ -69,15 +69,15 @@ export async function PATCH(req: NextRequest) {
   await ensureSchema();
   try {
     const body = await req.json();
-  const { id, updates } = body as { id: number; updates: Partial<{ date: string; time: string; status: string; notes: string }>; };
+  const { id, updates } = body as { id: number; updates: Partial<{ date: string; time: string; status: string; notes: string; car_model: string }>; };
     if (!id || !updates) return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
-  const keys = Object.keys(updates) as Array<'date' | 'time' | 'status' | 'notes'>;
+  const keys = Object.keys(updates) as Array<'date' | 'time' | 'status' | 'notes' | 'car_model'>;
     if (keys.length === 0) return NextResponse.json({ error: 'No updates provided' }, { status: 400 });
 
     if (updates.date && !/^\d{4}-\d{2}-\d{2}$/.test(updates.date)) {
       return NextResponse.json({ error: 'Invalid date format (expected YYYY-MM-DD)' }, { status: 400 });
     }
-    if (updates.time && !/^\d{2}:\d{2}$/.test(updates.time)) {
+  if (updates.time && !/^\d{2}:\d{2}$/.test(updates.time)) {
       return NextResponse.json({ error: 'Invalid time format (expected HH:mm)' }, { status: 400 });
     }
 
@@ -89,11 +89,12 @@ export async function PATCH(req: NextRequest) {
     const includeStatus = keys.includes('status');
     const statusParam = includeStatus ? updates.status ?? null : (changingCore ? 'updated' : null);
 
-    const rows = (await db`update bookings
+  const rows = (await db`update bookings
       set
         date   = coalesce(${updates.date ?? null}, date),
         time   = coalesce(${updates.time ?? null}, time),
         notes  = coalesce(${updates.notes ?? null}, notes),
+    car_model = coalesce(${'car_model' in updates ? (updates.car_model ?? null) : null}, car_model),
         status = coalesce(${statusParam}, status),
         updated_at = now()
       where id = ${id}

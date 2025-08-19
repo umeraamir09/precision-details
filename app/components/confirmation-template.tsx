@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 import * as React from 'react';
 
 export function ConfirmationTemplate({ firstName, logoUrl }: { firstName: string; logoUrl?: string }) {

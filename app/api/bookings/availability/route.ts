@@ -8,10 +8,6 @@ function isWeekendStr(dateStr: string) {
   return dow === 0 || dow === 6;
 }
 
-function toMinutes(hhmm: string) {
-  const [hh, mm] = hhmm.split(':').map((n) => parseInt(n, 10));
-  return (hh || 0) * 60 + (mm || 0);
-}
 
 export async function GET(req: NextRequest) {
   try {

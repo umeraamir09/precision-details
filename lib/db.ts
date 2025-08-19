@@ -33,6 +33,7 @@ export async function ensureSchema() {
       name text not null,
       email text not null unique,
       phone text unique,
+    car_model text,
       notes text,
       date date not null,
       time text not null,
@@ -42,6 +43,7 @@ export async function ensureSchema() {
       updated_at timestamptz not null default now()
     );
   `;
+  await db`alter table bookings add column if not exists car_model text`;
   await db`alter table bookings add column if not exists location_type text`;
   await db`alter table bookings add column if not exists location_address text`;
   // Allow multiple bookings per email/phone (was previously unique)
@@ -69,6 +71,7 @@ export type BookingRow = {
   name: string;
   email: string;
   phone: string | null;
+  car_model?: string | null;
   notes: string | null;
   date: string;
   time: string;
