@@ -63,7 +63,7 @@ export default function BookingForm({ slug }: { slug: string }) {
   const [date, setDate] = useState<Date | undefined>();
   const [time, setTime] = useState<string | undefined>();
   const [form, setForm] = useState({ name: '', email: '', phone: '', carModel: '', notes: '' });
-  const [locationType, setLocationType] = useState<'my' | 'shop'>('my');
+  const [locationType, setLocationType] = useState<'my' | 'shop'>('shop');
   const [locationAddress, setLocationAddress] = useState('');
   const [status, setStatus] = useState<string | null>(null);
   const [errors, setErrors] = useState<{ email?: string; phone?: string } | null>(null);
@@ -250,12 +250,12 @@ export default function BookingForm({ slug }: { slug: string }) {
             <div className="mt-2 grid gap-3">
               <div className="flex items-center gap-4">
                 <label className="inline-flex items-center gap-2 text-sm text-white">
+                  <label className="inline-flex items-center gap-2 text-sm text-white">
+                  <input type="radio" name="location" value="shop" checked={locationType==='shop'} onChange={()=>setLocationType('shop')} />
+                    Precision Details Location
+                </label>
                   <input type="radio" name="location" value="my" checked={locationType==='my'} onChange={()=>setLocationType('my')} />
                   My Location
-                </label>
-                <label className="inline-flex items-center gap-2 text-sm text-white">
-                  <input type="radio" name="location" value="shop" checked={locationType==='shop'} onChange={()=>setLocationType('shop')} />
-                  Precision Details Location
                 </label>
               </div>
               {locationType==='my' ? (
@@ -269,9 +269,9 @@ export default function BookingForm({ slug }: { slug: string }) {
               ) : (
                 <div className="rounded-lg border border-white/10 bg-background/50 p-4 text-sm text-muted-foreground">
                   <div className="text-white font-medium">Precision Details</div>
-                  <div>331-307-8784</div>
+                  <div>+1 331 307 8784</div>
                   <div>contact@precisiondetails.co</div>
-                  <div>1234 Detailing Ave, Suite 200, Chicago, IL 60601</div>
+                  <div>Glen Ellyn, IL 1137 Heather Lane</div>
                   <div className="mt-2 text-xs">We&apos;ll include these details in your confirmation email.</div>
                 </div>
               )}
