@@ -62,7 +62,7 @@ export default function BookingForm({ slug }: { slug: string }) {
 
   const [date, setDate] = useState<Date | undefined>();
   const [time, setTime] = useState<string | undefined>();
-  const [form, setForm] = useState({ name: '', email: '', phone: '', carModel: '', notes: '' });
+  const [form, setForm] = useState({ name: '', email: '', phone: '', carModel: '', seatType: '' as '' | 'leather' | 'cloth', notes: '' });
   const [locationType, setLocationType] = useState<'my' | 'shop'>('shop');
   const [locationAddress, setLocationAddress] = useState('');
   const [status, setStatus] = useState<string | null>(null);
@@ -234,6 +234,18 @@ export default function BookingForm({ slug }: { slug: string }) {
               className="mt-1 w-full rounded-lg border border-white/10 bg-background/60 px-3 py-2 text-sm text-white placeholder:text-muted-foreground/70 outline-none transition focus-visible:border-primary/40 focus-visible:ring-2 focus-visible:ring-primary/20"
               placeholder="e.g. Toyota Camry 2018"
             />
+          </div>
+          <div className="sm:col-span-2">
+            <label className="text-xs text-muted-foreground">Seat type</label>
+            <select
+              value={form.seatType}
+              onChange={(e)=>setForm(v=>({...v, seatType: (e.target.value as 'leather' | 'cloth' | '')}))}
+              className="mt-1 w-full rounded-lg border border-white/10 bg-background/60 text-white px-3 py-2 text-sm outline-none transition focus-visible:border-primary/40 focus-visible:ring-2 focus-visible:ring-primary/20"
+            >
+              <option value="">Select seat type (optional)</option>
+              <option value="leather">Leather</option>
+              <option value="cloth">Cloth</option>
+            </select>
           </div>
           <div className="sm:col-span-2">
             <label className="text-xs text-muted-foreground">Notes (optional)</label>

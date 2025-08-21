@@ -12,6 +12,7 @@ type Booking = {
   email: string;
   phone: string | null;
   car_model?: string | null;
+  seat_type?: 'leather' | 'cloth' | string | null;
   notes: string | null;
   date: string;
   time: string;
@@ -119,6 +120,7 @@ export default function AdminBookings() {
                 <th className="px-3 py-2">Package</th>
                 <th className="px-3 py-2">Customer</th>
                 <th className="px-3 py-2">Car</th>
+                <th className="px-3 py-2">Seat</th>
                 <th className="px-3 py-2">Status</th>
                 <th className="px-3 py-2">Actions</th>
               </tr>
@@ -133,6 +135,7 @@ export default function AdminBookings() {
                     <div className="text-xs text-muted-foreground">{b.email}{b.phone ? ` • ${b.phone}` : ''}</div>
                   </td>
                   <td className="px-3 py-2 text-white/80">{b.car_model || '—'}</td>
+                  <td className="px-3 py-2 text-white/80">{b.seat_type ? (b.seat_type[0].toUpperCase() + String(b.seat_type).slice(1)) : '—'}</td>
                   <td className="px-3 py-2">
                     <select
                       value={b.status}

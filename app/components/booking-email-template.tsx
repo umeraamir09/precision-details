@@ -7,6 +7,7 @@ export function BookingEmailToOwner(props: {
   phone?: string;
   notes?: string;
   carModel?: string;
+  seatType?: 'leather' | 'cloth' | string;
   packageName: string;
   date: string;
   time: string;
@@ -14,7 +15,7 @@ export function BookingEmailToOwner(props: {
   locationType?: 'my' | 'shop';
   locationAddress?: string | null;
 }) {
-  const { name, email, phone, notes, carModel, packageName, date, time, logoUrl, locationType, locationAddress } = props;
+  const { name, email, phone, notes, carModel, seatType, packageName, date, time, logoUrl, locationType, locationAddress } = props;
   return (
     <div style={{ backgroundColor: '#0f0e0d', color: '#ffffff', fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', Arial, 'Noto Sans', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'", padding: '24px' }}>
       <table role="presentation" width="100%" cellPadding={0} cellSpacing={0} style={{ maxWidth: 640, margin: '0 auto', backgroundColor: '#151311', borderRadius: 16, overflow: 'hidden', border: '1px solid #2a2623' }}>
@@ -62,6 +63,10 @@ export function BookingEmailToOwner(props: {
                     <td style={cellValueStyle}>{carModel || '—'}</td>
                   </tr>
                   <tr>
+                    <td style={cellLabelStyle}>Seat type</td>
+                    <td style={cellValueStyle}>{seatType ? (seatType[0].toUpperCase() + seatType.slice(1)) : '—'}</td>
+                  </tr>
+                  <tr>
                     <td style={cellLabelStyle}>Date</td>
                     <td style={cellValueStyle}>{date}</td>
                   </tr>
@@ -98,8 +103,8 @@ export function BookingEmailToOwner(props: {
   );
 }
 
-export function BookingEmailToCustomer(props: { name: string; packageName: string; date: string; time: string; logoUrl?: string; carModel?: string; locationType?: 'my' | 'shop'; locationAddress?: string | null; }) {
-  const { name, packageName, date, time, logoUrl, carModel, locationType, locationAddress } = props;
+export function BookingEmailToCustomer(props: { name: string; packageName: string; date: string; time: string; logoUrl?: string; carModel?: string; seatType?: 'leather' | 'cloth' | string; locationType?: 'my' | 'shop'; locationAddress?: string | null; }) {
+  const { name, packageName, date, time, logoUrl, carModel, seatType, locationType, locationAddress } = props;
   const shop = {
     name: process.env.SHOP_NAME || 'Precision Details',
     phone: process.env.SHOP_PHONE || '331-307-8784',
@@ -148,6 +153,12 @@ export function BookingEmailToCustomer(props: { name: string; packageName: strin
                     <tr>
                       <td style={cellLabelStyle}>Vehicle</td>
                       <td style={cellValueStyle}>{carModel}</td>
+                    </tr>
+                  )}
+                  {seatType && (
+                    <tr>
+                      <td style={cellLabelStyle}>Seat type</td>
+                      <td style={cellValueStyle}>{seatType[0].toUpperCase() + seatType.slice(1)}</td>
                     </tr>
                   )}
                 </tbody>

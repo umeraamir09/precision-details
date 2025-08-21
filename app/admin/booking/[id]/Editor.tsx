@@ -11,6 +11,7 @@ type Booking = {
   email: string;
   phone: string | null;
   car_model?: string | null;
+  seat_type?: 'leather' | 'cloth' | string | null;
   notes: string | null;
   date: string;
   time: string;
@@ -24,15 +25,16 @@ export default function BookingEditor({ initial }: { initial: Booking }) {
   const [time, setTime] = useState(initial.time);
   const [status, setStatus] = useState(initial.status);
   const [carModel, setCarModel] = useState(initial.car_model || '');
+  const [seatType, setSeatType] = useState((initial.seat_type as string) || '');
   const [notes, setNotes] = useState(initial.notes || '');
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
   const changed = useMemo(() => (
-    date !== initial.date || time !== initial.time || status !== initial.status || (notes || '') !== (initial.notes || '') || (carModel || '') !== (initial.car_model || '')
-  ), [date, time, status, notes, carModel, initial]);
+    date !== initial.date || time !== initial.time || status !== initial.status || (notes || '') !== (initial.notes || '') || (carModel || '') !== (initial.car_model || '') || (seatType || '') !== (initial.seat_type || '')
+  ), [date, time, status, notes, carModel, seatType, initial]);
 
-  type BookingUpdate = Pick<Booking,'date'|'time'|'status'|'notes'> & { car_model?: string };
+  type BookingUpdate = Pick<Booking,'date'|'time'|'status'|'notes'> & { car_model?: string; seat_type?: string | null };
 
   async function save() {
     setBusy(true); setMsg(null);
@@ -43,6 +45,7 @@ export default function BookingEditor({ initial }: { initial: Booking }) {
       if (status !== initial.status) updates.status = status;
       if ((notes || '') !== (initial.notes || '')) updates.notes = notes;
       if ((carModel || '') !== (initial.car_model || '')) updates.car_model = carModel;
+  if ((seatType || '') !== (initial.seat_type || '')) updates.seat_type = seatType || null;
       if (Object.keys(updates).length === 0) { setMsg('No changes'); return; }
       const res = await fetch('/api/bookings', {
         method: 'PATCH',
@@ -127,6 +130,14 @@ export default function BookingEditor({ initial }: { initial: Booking }) {
       <div>
         <label className="text-xs text-muted-foreground">Car model</label>
         <input value={carModel} onChange={(e)=>setCarModel(e.target.value)} className="mt-1 w-full rounded border border-white/10 bg-background/60 px-3 py-2 text-sm text-white" />
+      </div>
+      <div>
+        <label className="text-xs text-muted-foreground">Seat type</label>
+        <select value={seatType} onChange={(e)=>setSeatType(e.target.value)} className="mt-1 w-full rounded border border-white/10 bg-background/60 px-3 py-2 text-sm text-white">
+          <option value="">—</option>
+          <option value="leather">Leather</option>
+          <option value="cloth">Cloth</option>
+        </select>
       </div>
       <div>
         <label className="text-xs text-muted-foreground">Notes</label>

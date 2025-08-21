@@ -34,6 +34,7 @@ export async function ensureSchema() {
       email text not null unique,
       phone text unique,
     car_model text,
+    seat_type text,
       notes text,
       date date not null,
       time text not null,
@@ -44,6 +45,7 @@ export async function ensureSchema() {
     );
   `;
   await db`alter table bookings add column if not exists car_model text`;
+  await db`alter table bookings add column if not exists seat_type text`;
   await db`alter table bookings add column if not exists location_type text`;
   await db`alter table bookings add column if not exists location_address text`;
   // Allow multiple bookings per email/phone (was previously unique)
@@ -77,6 +79,7 @@ export type BookingRow = {
   time: string;
   status: 'booked' | 'cancelled' | 'updated' | 'completed' | string;
   gcal_event_id: string | null;
+  seat_type?: 'leather' | 'cloth' | string | null;
   location_type?: 'my' | 'shop' | string | null;
   location_address?: string | null;
   created_at: string;

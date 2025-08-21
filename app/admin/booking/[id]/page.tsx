@@ -57,6 +57,7 @@ export default async function AdminBookingDetailPage({ params }: { params: Promi
             <div><div className="text-muted-foreground text-xs">Date</div><div className="text-white">{booking.date}</div></div>
             <div><div className="text-muted-foreground text-xs">Time</div><div className="text-white">{booking.time}</div></div>
             <div><div className="text-muted-foreground text-xs">Period</div><div className="text-white">{booking.period}</div></div>
+            <div><div className="text-muted-foreground text-xs">Seat type</div><div className="text-white">{('seat_type' in booking && (booking as BookingRow & { seat_type?: string | null }).seat_type ? String((booking as BookingRow & { seat_type?: string | null }).seat_type).replace(/^./, c=>c.toUpperCase()) : '—')}</div></div>
           </div>
           <div className="mt-3">
             <div className="text-muted-foreground text-xs mb-1">Notes</div>
