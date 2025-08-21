@@ -145,6 +145,7 @@ export default function BookingForm({ slug }: { slug: string }) {
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!date || !time) { setStatus('Please select a date and time.'); return; }
+  if (!form.seatType) { setStatus('Please choose a seat type.'); return; }
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const errs: { email?: string; phone?: string } = {};
     if (!emailRegex.test(form.email)) {
@@ -238,11 +239,12 @@ export default function BookingForm({ slug }: { slug: string }) {
           <div className="sm:col-span-2">
             <label className="text-xs text-muted-foreground">Seat type</label>
             <select
+              required
               value={form.seatType}
               onChange={(e)=>setForm(v=>({...v, seatType: (e.target.value as 'leather' | 'cloth' | '')}))}
               className="mt-1 w-full rounded-lg border border-white/10 bg-background/60 text-white px-3 py-2 text-sm outline-none transition focus-visible:border-primary/40 focus-visible:ring-2 focus-visible:ring-primary/20"
             >
-              <option value="">Select seat type (optional)</option>
+              <option value="" disabled>Select seat type</option>
               <option value="leather">Leather</option>
               <option value="cloth">Cloth</option>
             </select>

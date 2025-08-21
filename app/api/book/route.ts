@@ -51,6 +51,9 @@ export async function POST(request: Request) {
     if (!slug || !date || !time || !name || !email) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
+    if (!seatType || !['leather','cloth'].includes(String(seatType))) {
+      return NextResponse.json({ error: 'Seat type is required (leather or cloth).' }, { status: 400 });
+    }
     
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
       return NextResponse.json({ error: 'Invalid date format (expected YYYY-MM-DD)' }, { status: 400 });
