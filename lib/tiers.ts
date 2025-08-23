@@ -1,14 +1,47 @@
 export type Tier = {
-  slug: 'bronze' | 'silver' | 'gold';
+  slug: 'bronze' | 'silver' | 'gold' | 'paint-correction' | 'diamond' | 'exterior' | 'interior';
   name: string;
   price: number;
   period: string;
   features: string[];
   highlight?: boolean;
   cta?: string;
+  /** Indicates the tier is not yet available for booking */
+  comingSoon?: boolean;
+  /** Indicates the price is a starting price */
+  startingAt?: boolean;
 };
 
 export const tiers: Tier[] = [
+    {
+    slug: 'exterior',
+    name: 'Exterior Only',
+    price: 30,
+    period: 'per car',
+    features: [
+      'Double coat foam wash with contact wash',
+      'Swirl-free windows',
+      'Tire shine',
+      'Duration: 1–1.5 hours',
+      'Add-on: Paint protection wax',
+    ],
+    startingAt: true,
+    cta: 'Book Now',
+  },
+  {
+    slug: 'interior',
+    name: 'Interior Only',
+    price: 50,
+    period: 'per car',
+    features: [
+      'Full interior vacuum',
+      'Interior clean with shiner',
+      'Full trunk clean',
+      'Duration: 2–2.5 hours',
+    ],
+    startingAt: true,
+    cta: 'Book Now',
+  },
   {
     slug: 'bronze',
     name: 'Bronze',
@@ -49,6 +82,20 @@ export const tiers: Tier[] = [
       '2-4 weeks of paint protection from wax',
     ],
     cta: 'Book Now',
+  },
+  {
+    slug: 'paint-correction',
+    name: 'Paint Correction',
+    price: 220,
+    period: 'per car',
+    features: [
+      'Paint decontamination clay bar',
+      '1 step clear cut compound',
+      '1 step polish',
+      'Duration: 3-4 hours',
+    ],
+    cta: 'Coming Soon',
+    comingSoon: true,
   },
 ];
 
