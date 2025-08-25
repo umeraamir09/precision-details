@@ -43,19 +43,6 @@ export const tiers: Tier[] = [
     cta: 'Book Now',
   },
   {
-    slug: 'bronze',
-    name: 'Bronze',
-    price: 119,
-    period: 'per car',
-    features: [
-      'Single coat foam wash with contact wash',
-      'Full interior clean',
-      'Tire Shine',
-      'Swirl-free windows',
-    ],
-    cta: 'Book Now',
-  },
-  {
     slug: 'silver',
     name: 'Silver',
     price: 149,
