@@ -1,5 +1,5 @@
 export type Tier = {
-  slug: 'bronze' | 'silver' | 'gold' | 'paint-correction' | 'diamond' | 'exterior' | 'interior';
+  slug: 'bronze' | 'silver' | 'gold' | 'paint-correction' | 'diamond' | 'exterior' | 'interior' | 'upholstery';
   name: string;
   price: number;
   period: string;
@@ -16,14 +16,14 @@ export const tiers: Tier[] = [
     {
     slug: 'exterior',
     name: 'Exterior Only',
-    price: 30,
+      price: 50,
     period: 'per car',
     features: [
       'Double coat foam wash with contact wash',
       'Swirl-free windows',
       'Tire shine',
       'Duration: 1–1.5 hours',
-      'Add-on: Paint protection wax',
+        'Paint protection wax included',
     ],
     startingAt: true,
     cta: 'Book Now',
@@ -31,7 +31,7 @@ export const tiers: Tier[] = [
   {
     slug: 'interior',
     name: 'Interior Only',
-    price: 50,
+      price: 80,
     period: 'per car',
     features: [
       'Full interior vacuum',
@@ -42,6 +42,19 @@ export const tiers: Tier[] = [
     startingAt: true,
     cta: 'Book Now',
   },
+    {
+      slug: 'upholstery',
+      name: 'Upholstery Interior Deep Clean',
+      price: 120,
+      period: 'per car',
+      features: [
+        'Full interior shampoo',
+        'Extracted seats',
+        'Fresh smell',
+      ],
+      startingAt: true,
+      cta: 'Book Now',
+    },
   {
     slug: 'silver',
     name: 'Silver',
