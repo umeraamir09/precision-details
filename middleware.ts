@@ -4,7 +4,7 @@ import { jwtVerify } from 'jose'
 const enc = new TextEncoder()
 
 export const config = {
-  matcher: ['/admin/:path*', '/api/bookings/:path*'],
+  matcher: ['/admin/:path*'],
 }
 
 async function isAuthed(req: NextRequest) {

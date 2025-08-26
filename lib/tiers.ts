@@ -36,8 +36,7 @@ export const tiers: Tier[] = [
     features: [
       'Full interior vacuum',
       'Interior clean with shiner',
-      'Full trunk clean',
-      'Duration: 2–2.5 hours',
+      'Duration: 2 - 2.5 hours',
     ],
     startingAt: true,
     cta: 'Book Now',
