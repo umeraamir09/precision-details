@@ -135,6 +135,10 @@ export default function PricingPlans() {
         </ul>
         {comingSoon ? (
           <Button disabled variant="secondary" className="mt-8 w-full rounded-full cursor-not-allowed">Coming Soon</Button>
+        ) : tier.slug === 'custom' ? (
+          <Button asChild className="mt-8 w-full rounded-full">
+            <Link href={`/custom`}>{tier.cta ?? 'Build Now'}</Link>
+          </Button>
         ) : (
           <Button asChild className="mt-8 w-full rounded-full">
             <Link href={`/booking/${tier.slug}`}>{tier.cta ?? 'Book Now'}</Link>

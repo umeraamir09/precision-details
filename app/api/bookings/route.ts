@@ -3,16 +3,30 @@ import { db, ensureSchema, type BookingRow, hasDb } from '@/lib/db';
 import { Resend } from 'resend';
 import { UpdateBookingEmailToCustomer, CancellationEmailToCustomer, DateTimeUpdatedEmailToCustomer, CompletedEmailToCustomer } from '@/app/components/confirmation-template';
 import { google } from 'googleapis';
+import { verifySessionToken } from '@/lib/auth';
 
-function isAuthorized(req: NextRequest) {
+async function isAuthorized(req: NextRequest) {
   const key = process.env.ADMIN_KEY;
+  // If no ADMIN_KEY configured, allow (assumes dev environment)
   if (!key) return true;
+  // Header or query param key match
   const h = req.headers.get('x-admin-key') || req.nextUrl.searchParams.get('key');
-  return h === key;
+  if (h === key) return true;
+  // Fallback: validate admin_session cookie JWT (middleware already does this, but route-level was blocking)
+  const token = req.cookies.get('admin_session')?.value;
+  if (token) {
+    try {
+      await verifySessionToken(token);
+      return true;
+    } catch {
+      /* ignore */
+    }
+  }
+  return false;
 }
 
 export async function GET(req: NextRequest) {
-  if (!isAuthorized(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!(await isAuthorized(req))) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   if (!hasDb) return NextResponse.json({ error: 'Database not configured' }, { status: 500 });
   await ensureSchema();
   try {
@@ -23,37 +37,39 @@ export async function GET(req: NextRequest) {
       const rows = (await db`select * from bookings where id = ${id}`) as unknown as BookingRow[];
       const r = rows?.[0];
       if (!r) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-      const rec = r as unknown as Record<string, unknown>;
+      const rec = r as BookingRow;
+      const rawCf: unknown = (rec as unknown as { custom_features?: unknown }).custom_features;
+      const normCf = Array.isArray(rawCf)
+        ? rawCf.filter((x): x is string => typeof x === 'string')
+        : typeof rawCf === 'string'
+          ? (() => { try { const parsed = JSON.parse(rawCf); return Array.isArray(parsed) ? parsed.filter((x): x is string => typeof x === 'string') : []; } catch { return []; } })()
+          : [];
+      const dateVal = (rec as unknown as { date?: unknown }).date;
+      const timeVal = (rec as unknown as { time?: unknown }).time;
       const normalized = {
-        ...(rec as Record<string, unknown>),
-        date:
-          rec.date instanceof Date
-            ? rec.date.toISOString().slice(0, 10)
-            : (rec.date as string | undefined) ?? '',
-        time:
-          typeof rec.time === 'string'
-            ? rec.time
-            : rec.time instanceof Date
-              ? `${String(rec.time.getHours()).padStart(2, '0')}:${String(rec.time.getMinutes()).padStart(2, '0')}`
-              : '',
+        ...(rec as object),
+        custom_features: normCf,
+        date: typeof dateVal === 'string' ? dateVal : (dateVal instanceof Date ? dateVal.toISOString().slice(0,10) : ''),
+        time: typeof timeVal === 'string' ? timeVal : (timeVal instanceof Date ? `${String(timeVal.getHours()).padStart(2,'0')}:${String(timeVal.getMinutes()).padStart(2,'0')}` : ''),
       } as unknown as BookingRow;
       return NextResponse.json({ ok: true, booking: normalized });
     }
-    const rows = (await db`select * from bookings order by created_at desc`) as unknown as BookingRow[];
+  const rows = (await db`select * from bookings order by created_at desc`) as unknown as BookingRow[];
     const normalized = rows.map((r) => {
-      const rec = r as unknown as Record<string, unknown>;
+      const rec = r as BookingRow;
+      const rawCf: unknown = (rec as unknown as { custom_features?: unknown }).custom_features;
+      const normCf = Array.isArray(rawCf)
+        ? rawCf.filter((x): x is string => typeof x === 'string')
+        : typeof rawCf === 'string'
+          ? (() => { try { const parsed = JSON.parse(rawCf); return Array.isArray(parsed) ? parsed.filter((x): x is string => typeof x === 'string') : []; } catch { return []; } })()
+          : [];
+      const dateVal = (rec as unknown as { date?: unknown }).date;
+      const timeVal = (rec as unknown as { time?: unknown }).time;
       return {
-        ...(rec as Record<string, unknown>),
-        date:
-          rec.date instanceof Date
-            ? rec.date.toISOString().slice(0, 10)
-            : (rec.date as string | undefined) ?? '',
-        time:
-          typeof rec.time === 'string'
-            ? rec.time
-            : rec.time instanceof Date
-              ? `${String(rec.time.getHours()).padStart(2, '0')}:${String(rec.time.getMinutes()).padStart(2, '0')}`
-              : '',
+        ...(rec as object),
+        custom_features: normCf,
+        date: typeof dateVal === 'string' ? dateVal : (dateVal instanceof Date ? dateVal.toISOString().slice(0,10) : ''),
+        time: typeof timeVal === 'string' ? timeVal : (timeVal instanceof Date ? `${String(timeVal.getHours()).padStart(2,'0')}:${String(timeVal.getMinutes()).padStart(2,'0')}` : ''),
       } as unknown as BookingRow;
     });
     return NextResponse.json({ ok: true, bookings: normalized });
@@ -64,7 +80,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
-  if (!isAuthorized(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!(await isAuthorized(req))) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   if (!hasDb) return NextResponse.json({ error: 'Database not configured' }, { status: 500 });
   await ensureSchema();
   try {
@@ -180,25 +196,36 @@ export async function PATCH(req: NextRequest) {
       try {
   const resend = new Resend(process.env.RESEND_API_KEY);
   const logoUrl = process.env.PUBLIC_BRAND_LOGO_URL || 'https://raw.githubusercontent.com/umeraamir09/precision-details-assets/main/logo-secondary.png';
+        const getCustom = (row: BookingRow) => {
+          const price = typeof row.price === 'number' ? row.price : undefined;
+          const raw = row.custom_features;
+          const customFeatures = Array.isArray(raw) ? raw.filter((x): x is string => typeof x === 'string') : undefined;
+          return { price, customFeatures };
+        };
+        const { price: updPrice, customFeatures: updFeatures } = getCustom(updated as unknown as BookingRow);
         if (updated.status === 'completed') {
-          await resend.emails.send({
+      await resend.emails.send({
             from: 'Precision Details <noreply@umroo.art>',
             to: [updated.email],
             subject: 'Your booking is completed',
-            react: CompletedEmailToCustomer({
+      react: CompletedEmailToCustomer({
               name: updated.name,
               packageName: updated.package_name,
               date: typeof updated.date === 'string' ? updated.date : String(updated.date),
               time: typeof updated.time === 'string' ? updated.time : String(updated.time),
               logoUrl,
+        price: updPrice,
+        customFeatures: updFeatures,
+    carType: (updated as unknown as { car_type?: string }).car_type,
             }),
           });
         } else if (dateChanged || timeChanged) {
+          const { price: newPrice, customFeatures: newFeatures } = { price: updPrice, customFeatures: updFeatures };
           await resend.emails.send({
             from: 'Precision Details <noreply@umroo.art>',
             to: [updated.email],
             subject: 'Your appointment was rescheduled',
-            react: DateTimeUpdatedEmailToCustomer({
+      react: DateTimeUpdatedEmailToCustomer({
               name: updated.name,
               packageName: updated.package_name,
               oldDate: existing.date,
@@ -207,6 +234,9 @@ export async function PATCH(req: NextRequest) {
               newTime: typeof updated.time === 'string' ? updated.time : String(updated.time),
               notes: updated.notes || undefined,
               logoUrl,
+        price: newPrice,
+        customFeatures: newFeatures,
+    carType: (updated as unknown as { car_type?: string }).car_type,
             }),
           });
         } else {
@@ -214,7 +244,7 @@ export async function PATCH(req: NextRequest) {
             from: 'Precision Details <noreply@umroo.art>',
             to: [updated.email],
             subject: 'Your booking was updated',
-            react: UpdateBookingEmailToCustomer({
+      react: UpdateBookingEmailToCustomer({
               name: updated.name,
               packageName: updated.package_name,
               date: typeof updated.date === 'string' ? updated.date : String(updated.date),
@@ -222,6 +252,9 @@ export async function PATCH(req: NextRequest) {
               notes: updated.notes || undefined,
               status: updated.status,
               logoUrl,
+        price: updPrice,
+        customFeatures: updFeatures,
+    carType: (updated as unknown as { car_type?: string }).car_type,
             }),
           });
         }
@@ -237,7 +270,7 @@ export async function PATCH(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  if (!isAuthorized(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!(await isAuthorized(req))) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   if (!hasDb) return NextResponse.json({ error: 'Database not configured' }, { status: 500 });
   await ensureSchema();
   try {
@@ -271,16 +304,22 @@ export async function DELETE(req: NextRequest) {
       try {
   const resend = new Resend(process.env.RESEND_API_KEY);
   const logoUrl = process.env.PUBLIC_BRAND_LOGO_URL || 'https://raw.githubusercontent.com/umeraamir09/precision-details-assets/main/logo-secondary.png';
-        await resend.emails.send({
+    const price = typeof cancelled.price === 'number' ? cancelled.price : undefined;
+    const cfsRaw = cancelled.custom_features;
+    const customFeatures = Array.isArray(cfsRaw) ? cfsRaw.filter((x): x is string => typeof x === 'string') : undefined;
+    await resend.emails.send({
           from: 'Precision Details <noreply@umroo.art>',
           to: [cancelled.email],
           subject: 'Your booking was cancelled',
-          react: CancellationEmailToCustomer({
+    react: CancellationEmailToCustomer({
             name: cancelled.name,
             packageName: cancelled.package_name,
             date: typeof cancelled.date === 'string' ? cancelled.date : String(cancelled.date),
             time: typeof cancelled.time === 'string' ? cancelled.time : String(cancelled.time),
             logoUrl,
+      price,
+      customFeatures,
+  carType: (cancelled as unknown as { car_type?: string }).car_type,
           }),
         });
       } catch (e) {

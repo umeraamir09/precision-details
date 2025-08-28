@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/app/components/shadcn/button';
 import Calendar, { type CalendarProps } from '@/app/components/shadcn/calendar';
+import { getTierBySlug } from '@/lib/tiers';
 
 function pad(n: number) { return n.toString().padStart(2, '0'); }
 
@@ -57,12 +58,12 @@ function isSlotPast(selectedDate: Date, hhmm: string) {
   return slotDate <= now;
 }
 
-export default function BookingForm({ slug }: { slug: string }) {
+export default function BookingForm({ slug, onCarTypeChange }: { slug: string; onCarTypeChange?: (ct: 'sedan' | 'van' | 'suv') => void }) {
   const router = useRouter();
 
   const [date, setDate] = useState<Date | undefined>();
   const [time, setTime] = useState<string | undefined>();
-  const [form, setForm] = useState({ name: '', email: '', phone: '', carModel: '', seatType: '' as '' | 'leather' | 'cloth', notes: '' });
+  const [form, setForm] = useState({ name: '', email: '', phone: '', carModel: '', carType: 'sedan' as 'sedan' | 'van' | 'suv', seatType: '' as '' | 'leather' | 'cloth', notes: '' });
   const [locationType, setLocationType] = useState<'my' | 'shop'>('shop');
   const [locationAddress, setLocationAddress] = useState('');
   const [status, setStatus] = useState<string | null>(null);
@@ -110,6 +111,15 @@ export default function BookingForm({ slug }: { slug: string }) {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
   }, []);
+
+  // Determine if the selected package is exterior-focused and therefore
+  // does not need a seat type selection.
+  const tier = useMemo(() => getTierBySlug(slug), [slug]);
+  const hideSeatType = useMemo(() => {
+    if (!tier) return false;
+    const name = String(tier.name || '').toLowerCase();
+    return tier.slug === 'exterior' || name.includes('exterior');
+  }, [tier]);
   
   useEffect(() => {
     const controller = new AbortController();
@@ -124,6 +134,11 @@ export default function BookingForm({ slug }: { slug: string }) {
       .catch(() => {});
     return () => controller.abort();
   }, [fromDate, toDate]);
+
+  // Notify parent of initial car type and subsequent changes
+  useEffect(() => {
+    onCarTypeChange?.(form.carType);
+  }, [form.carType, onCarTypeChange]);
 
   // When a weekend date is selected, fetch existing weekend start times
   useEffect(() => {
@@ -145,7 +160,7 @@ export default function BookingForm({ slug }: { slug: string }) {
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!date || !time) { setStatus('Please select a date and time.'); return; }
-  if (!form.seatType) { setStatus('Please choose a seat type.'); return; }
+    if (!hideSeatType && !form.seatType) { setStatus('Please choose a seat type.'); return; }
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const errs: { email?: string; phone?: string } = {};
     if (!emailRegex.test(form.email)) {
@@ -160,19 +175,32 @@ export default function BookingForm({ slug }: { slug: string }) {
     if (Object.keys(errs).length) { setErrors(errs); return; }
     setErrors(null);
     setStatus('Booking…');
-    try {
-    const res = await fetch('/api/book', {
+  // Extract custom features & base price from URL when slug is custom
+  const params = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
+  const customFeatures = slug === 'custom' ? params.get('features') : null;
+  const customPrice = slug === 'custom' ? params.get('price') : null;
+  try {
+  const res = await fetch('/api/book', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          slug,
+      body: JSON.stringify({
+        slug,
       // Use local date parts to avoid UTC shifting the selected day
       date: `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`,
-          time,
-          ...form,
-          locationType,
-          locationAddress: locationType === 'my' ? (locationAddress || null) : null,
-        }),
+        time,
+        // only include seatType when it's applicable
+        name: form.name,
+        email: form.email,
+        phone: form.phone || undefined,
+        notes: form.notes || undefined,
+        carModel: form.carModel || undefined,
+  seatType: hideSeatType ? undefined : form.seatType || undefined,
+  carType: form.carType || 'sedan',
+        locationType,
+        locationAddress: locationType === 'my' ? (locationAddress || null) : null,
+      customFeatures: customFeatures ? customFeatures.split(',') : undefined,
+      customBase: customPrice ? Number(customPrice) : undefined,
+      }),
       });
       const json: { ok?: boolean; error?: string } = await res.json();
       if (!res.ok) throw new Error(json.error || 'Failed to book');
@@ -237,6 +265,19 @@ export default function BookingForm({ slug }: { slug: string }) {
             />
           </div>
           <div className="sm:col-span-2">
+            <label className="text-xs text-muted-foreground">Car type</label>
+            <select
+              value={form.carType}
+              onChange={(e)=>{ const ct = e.target.value as 'sedan' | 'van' | 'suv'; setForm(v=>({...v, carType: ct})); onCarTypeChange?.(ct); }}
+              className="mt-1 w-full rounded-lg border border-white/10 bg-background/60 text-white px-3 py-2 text-sm outline-none transition focus-visible:border-primary/40 focus-visible:ring-2 focus-visible:ring-primary/20"
+            >
+              <option value="sedan">Sedan (default)</option>
+              <option value="van">Van (+$10)</option>
+              <option value="suv">SUV (+$20)</option>
+            </select>
+          </div>
+          { slug !== 'exterior' && (
+          <div className="sm:col-span-2">
             <label className="text-xs text-muted-foreground">Seat type</label>
             <select
               required
@@ -249,6 +290,7 @@ export default function BookingForm({ slug }: { slug: string }) {
               <option value="cloth">Cloth</option>
             </select>
           </div>
+          )}
           <div className="sm:col-span-2">
             <label className="text-xs text-muted-foreground">Notes (optional)</label>
             <textarea

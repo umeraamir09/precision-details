@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from 'react';
+import { SERVICE_OPTION_MAP } from '@/lib/services';
 import { Button } from '@/app/components/shadcn/button';
 
 type Booking = {
@@ -13,11 +14,14 @@ type Booking = {
   phone: string | null;
   car_model?: string | null;
   seat_type?: 'leather' | 'cloth' | string | null;
+  car_type?: 'sedan' | 'van' | 'suv' | string | null;
   notes: string | null;
   date: string;
   time: string;
   status: string;
   gcal_event_id: string | null;
+  custom_features?: string[] | null;
+  custom_base?: number | null;
   created_at: string;
   updated_at: string;
 };
@@ -28,6 +32,7 @@ export default function AdminBookings() {
   const [bookings, setBookings] = useState<Booking[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState<Record<number, boolean>>({});
   
 
   async function load() {
@@ -118,8 +123,10 @@ export default function AdminBookings() {
               <tr className="text-left text-white/80">
                 <th className="px-3 py-2">ID</th>
                 <th className="px-3 py-2">Package</th>
+                <th className="px-3 py-2">Price</th>
                 <th className="px-3 py-2">Customer</th>
                 <th className="px-3 py-2">Car</th>
+                <th className="px-3 py-2">Car Type</th>
                 <th className="px-3 py-2">Seat</th>
                 <th className="px-3 py-2">Status</th>
                 <th className="px-3 py-2">Actions</th>
@@ -127,40 +134,71 @@ export default function AdminBookings() {
             </thead>
             <tbody>
               {bookings.map((b) => (
-                <tr key={b.id} className="border-t border-white/10">
-                  <td className="px-3 py-2 text-white/80">{b.id}</td>
-                  <td className="px-3 py-2 text-white/90">{b.package_name}</td>
-                  <td className="px-3 py-2">
-                    <div className="text-white/90">{b.name}</div>
-                    <div className="text-xs text-muted-foreground">{b.email}{b.phone ? ` • ${b.phone}` : ''}</div>
-                  </td>
-                  <td className="px-3 py-2 text-white/80">{b.car_model || '—'}</td>
-                  <td className="px-3 py-2 text-white/80">{b.seat_type ? (b.seat_type[0].toUpperCase() + String(b.seat_type).slice(1)) : '—'}</td>
-                  <td className="px-3 py-2">
-                    <select
-                      value={b.status}
-                      onChange={(e) => updateBooking(b.id, { status: e.target.value })}
-                      className="rounded border border-white/10 bg-background/60 px-2 py-1 text-white/90"
-                    >
-                      <option value="booked">booked</option>
-                      <option value="updated">updated</option>
-                      <option value="cancelled">cancelled</option>
-                      <option value="completed">completed</option>
-                    </select>
-                  </td>
-                  <td className="px-3 py-2 flex gap-2">
-                    <Link href={`/admin/booking/${b.id}`} className="text-sm text-primary underline underline-offset-2">Open</Link>
-                    <Button
-                      variant="secondary"
-                      onClick={() => updateBooking(b.id, { status: 'completed' })}
-                      disabled={b.status === 'completed'}
-                    >
-                      {b.status === 'completed' ? 'Completed' : 'Mark Completed'}
-                    </Button>
-                    <Button variant="secondary" onClick={() => updateBooking(b.id, { notes: prompt('Notes', b.notes || '') || '' })}>Notes</Button>
-                    <Button variant="destructive" onClick={() => cancelBooking(b.id)}>Cancel</Button>
-                  </td>
-                </tr>
+                <>
+                  <tr key={b.id} className="border-t border-white/10 align-top">
+                    <td className="px-3 py-2 text-white/80">{b.id}</td>
+                    <td className="px-3 py-2 text-white/90">
+                      <div className="flex items-center gap-2">
+                        {b.package_name}
+                        {b.slug==='custom' && b.custom_features ? (
+                          <button
+                            type="button"
+                            onClick={() => setExpanded((cur)=> ({ ...cur, [b.id]: !cur[b.id] }))}
+                            className="text-xs rounded bg-white/5 hover:bg-white/10 px-2 py-0.5 text-primary"
+                            title="Toggle custom features"
+                          >
+                            {expanded[b.id] ? 'Hide' : `${b.custom_features.length} feat.`}
+                          </button>
+                        ) : null}
+                      </div>
+                      {b.slug==='custom' && b.custom_features && expanded[b.id] && (
+                        <ul className="mt-2 list-disc list-inside text-xs space-y-0.5 text-white/70">
+                          {b.custom_features.map((id,i)=>{
+                            const svc = SERVICE_OPTION_MAP[id];
+                            return <li key={i}>{svc ? `${svc.name} - $${svc.price}` : id}</li>;
+                          })}
+                        </ul>
+                      )}
+                    </td>
+                    <td className="px-3 py-2 text-white/80">${b.price}</td>
+                    <td className="px-3 py-2">
+                      <div className="text-white/90">{b.name}</div>
+                      <div className="text-xs text-muted-foreground">{b.email}{b.phone ? ` • ${b.phone}` : ''}</div>
+                    </td>
+                    <td className="px-3 py-2 text-white/80">{b.car_model || '—'}</td>
+                    <td className="px-3 py-2 text-white/80">{b.car_type ? b.car_type.replace(/^./, c=>c.toUpperCase()) : 'Sedan'}</td>
+                    <td className="px-3 py-2 text-white/80">{b.seat_type ? (b.seat_type[0].toUpperCase() + String(b.seat_type).slice(1)) : '—'}</td>
+                    <td className="px-3 py-2">
+                      <select
+                        value={b.status}
+                        onChange={(e) => updateBooking(b.id, { status: e.target.value })}
+                        className="rounded border border-white/10 bg-background/60 px-2 py-1 text-white/90"
+                      >
+                        <option value="booked">booked</option>
+                        <option value="updated">updated</option>
+                        <option value="cancelled">cancelled</option>
+                        <option value="completed">completed</option>
+                      </select>
+                    </td>
+                    <td className="px-3 py-2 flex flex-col gap-1 min-w-[220px]">
+                      <div className="flex flex-wrap gap-2">
+                        <Link href={`/admin/booking/${b.id}`} className="text-sm text-primary underline underline-offset-2">Open</Link>
+                        <Button
+                          variant="secondary"
+                          onClick={() => updateBooking(b.id, { status: 'completed' })}
+                          disabled={b.status === 'completed'}
+                        >
+                          {b.status === 'completed' ? 'Completed' : 'Complete'}
+                        </Button>
+                        <Button variant="secondary" onClick={() => updateBooking(b.id, { notes: prompt('Notes', b.notes || '') || '' })}>Notes</Button>
+                        <Button variant="destructive" onClick={() => cancelBooking(b.id)}>Cancel</Button>
+                      </div>
+                      {b.slug==='custom' && b.custom_features && (
+                        <div className="text-[10px] text-muted-foreground mt-1">Total: ${b.price}</div>
+                      )}
+                    </td>
+                  </tr>
+                </>
               ))}
             </tbody>
           </table>

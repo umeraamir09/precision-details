@@ -1,5 +1,5 @@
 export type Tier = {
-  slug: 'bronze' | 'silver' | 'gold' | 'paint-correction' | 'diamond' | 'exterior' | 'interior' | 'upholstery';
+  slug: 'bronze' | 'silver' | 'gold' | 'paint-correction' | 'diamond' | 'exterior' | 'interior' | 'upholstery' | 'custom';
   name: string;
   price: number;
   period: string;
@@ -13,73 +13,59 @@ export type Tier = {
 };
 
 export const tiers: Tier[] = [
-    {
+  {
+    slug: 'silver',
+    name: 'Essentials',
+    price: 195,
+    period: 'per car',
+    features: [
+      'Full exterior wash',
+      'Full interior clean + interior shine',
+      'Trunk clean',
+      'Paint protection from wax',
+    ],
+    highlight: true,
+    cta: 'Book Now',
+  },
+  {
     slug: 'exterior',
     name: 'Exterior Only',
-      price: 50,
+    price: 65,
     period: 'per car',
     features: [
       'Double coat foam wash with contact wash',
       'Swirl-free windows',
       'Tire shine',
       'Duration: 1–1.5 hours',
-        'Paint protection wax included',
+      'Paint protection wax included',
     ],
-    startingAt: true,
+    startingAt: false,
     cta: 'Book Now',
   },
   {
     slug: 'interior',
     name: 'Interior Only',
-      price: 80,
+    price: 100,
     period: 'per car',
     features: [
       'Full interior vacuum',
       'Interior clean with shiner',
       'Duration: 2 - 2.5 hours',
     ],
-    startingAt: true,
-    cta: 'Book Now',
-  },
-    {
-      slug: 'upholstery',
-      name: 'Upholstery Interior Deep Clean',
-      price: 120,
-      period: 'per car',
-      features: [
-        'Full interior shampoo',
-        'Extracted seats',
-        'Fresh smell',
-      ],
-      startingAt: true,
-      cta: 'Book Now',
-    },
-  {
-    slug: 'silver',
-    name: 'Silver',
-    price: 149,
-    period: 'per car',
-    features: [
-      'Double coat foam wash with contact wash',
-      'Full interior clean',
-      'Interior shine',
-      'Trunk clean',
-      'Tire shine',
-      'Swirl-free windows',
-    ],
-    highlight: true,
+    startingAt: false,
     cta: 'Book Now',
   },
   {
-    slug: 'gold',
-    name: 'Gold',
-    price: 179,
+    slug: 'upholstery',
+    name: 'Upholstery Interior Deep Clean',
+    price: 120,
     period: 'per car',
     features: [
-      'Everything in Silver',
-      'Engine Bay Cleaning',
-      '2-4 weeks of paint protection from wax',
+      'Full interior shampoo',
+      'Extracted seats',
+      'Fresh smell',
     ],
+    startingAt: false,
     cta: 'Book Now',
   },
   {
@@ -95,6 +81,21 @@ export const tiers: Tier[] = [
     ],
     cta: 'Coming Soon',
     comingSoon: true,
+  },
+  {
+    slug: 'custom',
+    name: 'Custom Package',
+    price: 0,
+    period: 'per car',
+    features: [
+      'Build a personalized package',
+      'Pick just the services you need',
+      'Instant live pricing',
+      'Includes confirmation email',
+    ],
+    startingAt: false,
+    cta: 'Build Now',
+    highlight: true,
   },
 ];
 

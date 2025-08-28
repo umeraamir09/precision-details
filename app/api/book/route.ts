@@ -3,6 +3,7 @@ import { google } from 'googleapis';
 import { Resend } from 'resend';
 import { getTierBySlug } from '@/lib/tiers';
 import { db, ensureSchema } from '@/lib/db';
+import { describeServiceIds } from '@/lib/services';
 import { BookingEmailToCustomer, BookingEmailToOwner } from '@/app/components/booking-email-template';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -38,22 +39,25 @@ type BookingPayload = {
   notes?: string;
   carModel?: string;
   seatType?: 'leather' | 'cloth' | string;
+  carType?: CarType;
   locationType?: 'my' | 'shop';
   locationAddress?: string | null;
+  customFeatures?: string[];
+  customBase?: number;
 };
+
+type CarType = 'sedan' | 'van' | 'suv';
 
 export async function POST(request: Request) {
   try {
   
   await ensureSchema();
   const body = (await request.json()) as Partial<BookingPayload>;
-  const { slug, date, time, name, email, phone, notes, carModel, seatType, locationType, locationAddress } = body;
+  const { slug, date, time, name, email, phone, notes, carModel, seatType, carType, locationType, locationAddress, customFeatures, customBase } = body;
     if (!slug || !date || !time || !name || !email) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
-    if (!seatType || !['leather','cloth'].includes(String(seatType))) {
-      return NextResponse.json({ error: 'Seat type is required (leather or cloth).' }, { status: 400 });
-    }
+  // seatType requirement will be checked after we resolve the tier below
     
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
       return NextResponse.json({ error: 'Invalid date format (expected YYYY-MM-DD)' }, { status: 400 });
@@ -72,8 +76,37 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Please provide a valid phone number.' }, { status: 400 });
       }
     }
-    const tier = getTierBySlug(slug);
-    if (!tier) return NextResponse.json({ error: 'Invalid package' }, { status: 400 });
+  const tier = getTierBySlug(slug) || (slug === 'custom' ? { name: 'Custom Package', price: (typeof customBase === 'number' && customBase >=0 ? customBase : 0), period: 'per car', features: customFeatures || [] } : null);
+  if (!tier) return NextResponse.json({ error: 'Invalid package' }, { status: 400 });
+  // For custom: build readable service lines & verify prices server-side to prevent tampering
+  let customLines: string[] | undefined;
+  if (slug === 'custom') {
+    const ids = Array.isArray(customFeatures) ? customFeatures.filter(id => typeof id === 'string') : [];
+    const { lines, total } = describeServiceIds(ids);
+    tier.price = total; // override with server computed total
+    customLines = lines; // 'Name - $Price'
+  }
+
+  // Vehicle type surcharge
+  const normCarType: CarType = ((): CarType => {
+    const ct = (carType || 'sedan').toString().toLowerCase();
+    return ct === 'van' ? 'van' : ct === 'suv' ? 'suv' : 'sedan';
+  })();
+  let surcharge = 0;
+  if (normCarType === 'van') surcharge = 10;
+  else if (normCarType === 'suv') surcharge = 20;
+  tier.price += surcharge;
+
+  // After resolving the tier, decide if seatType is required. Exterior-focused
+  // packages do not need seat type information.
+  // Use the incoming slug to decide if seat type is required. This avoids
+  // referencing tier.slug which may not exist for the constructed custom tier.
+  const requiresSeatType = String(slug) !== 'exterior';
+  if (requiresSeatType) {
+    if (!seatType || !['leather','cloth'].includes(String(seatType))) {
+      return NextResponse.json({ error: 'Seat type is required (leather or cloth).' }, { status: 400 });
+    }
+  }
 
     
     // Weekday vs weekend logic
@@ -138,8 +171,8 @@ export async function POST(request: Request) {
   const event = await calendar.events.insert({
       calendarId,
     requestBody: {
-        summary: `${tier.name} - ${name}`,
-  description: `Package: ${tier.name}\nPrice: $${tier.price} ${tier.period}\nEmail: ${email}\nPhone: ${phone || ''}\nVehicle: ${carModel || ''}\nSeat type: ${seatType || ''}\nNotes: ${notes || ''}\nLocation: ${locationType === 'shop' ? 'Precision Details (shop)' : 'Customer provided'}${locationType === 'my' && locationAddress ? `\nAddress: ${locationAddress}` : ''}`,
+    summary: `${tier.name} - ${name}`,
+  description: `Package: ${tier.name}\nPrice: $${tier.price} ${tier.period}\nEmail: ${email}\nPhone: ${phone || ''}\nVehicle: ${carModel || ''}\nCar type: ${normCarType}\nSeat type: ${seatType || ''}\nNotes: ${notes || ''}\nLocation: ${locationType === 'shop' ? 'Precision Details (shop)' : 'Customer provided'}${locationType === 'my' && locationAddress ? `\nAddress: ${locationAddress}` : ''}${slug === 'custom' && customLines && customLines.length ? `\nCustom Services:\n${customLines.join('\n')}` : ''}`,
   start: { dateTime: start, timeZone },
   end: { dateTime: end, timeZone },
       },
@@ -153,21 +186,21 @@ export async function POST(request: Request) {
       from: 'Precision Details <noreply@umroo.art>',
       to: [ownerEmail],
       subject: `New booking: ${tier.name} on ${date} at ${time12}`,
-      react: BookingEmailToOwner({ name, email, phone, notes, carModel: carModel || undefined, seatType: seatType || undefined, packageName: tier.name, date, time: time12, logoUrl, locationType, locationAddress: locationType === 'my' ? locationAddress || null : null }),
+  react: BookingEmailToOwner({ name, email, phone, notes, carModel: carModel || undefined, seatType: seatType || undefined, carType: normCarType, packageName: tier.name, price: tier.price, date, time: time12, logoUrl, locationType, locationAddress: locationType === 'my' ? locationAddress || null : null, customFeatures: slug === 'custom' ? customLines : undefined }),
     });
 
     await resend.emails.send({
       from: 'Precision Details <noreply@umroo.art>',
       to: [email],
       subject: 'Your booking was received',
-      react: BookingEmailToCustomer({ name, packageName: tier.name, date, time: time12, logoUrl, carModel: carModel || undefined, seatType: seatType || undefined, locationType, locationAddress: locationType === 'my' ? locationAddress || null : null }),
+  react: BookingEmailToCustomer({ name, packageName: tier.name, price: tier.price, date, time: time12, logoUrl, carModel: carModel || undefined, seatType: seatType || undefined, carType: normCarType, locationType, locationAddress: locationType === 'my' ? locationAddress || null : null, customFeatures: slug === 'custom' ? customLines : undefined }),
     });
 
     
     try {
     await db`
-  insert into bookings (slug, package_name, price, period, name, email, phone, car_model, seat_type, notes, date, time, status, gcal_event_id, location_type, location_address)
-  values (${slug}, ${tier.name}, ${tier.price}, ${tier.period}, ${name}, ${email}, ${phone || null}, ${carModel || null}, ${seatType || null}, ${notes || null}, ${date}, ${time}, ${'booked'}, ${event.data.id || null}, ${locationType ?? null}, ${locationType === 'my' ? (locationAddress ?? null) : null})
+  insert into bookings (slug, package_name, price, period, name, email, phone, car_model, seat_type, car_type, notes, date, time, status, gcal_event_id, location_type, location_address, custom_features, custom_base)
+  values (${slug}, ${tier.name}, ${tier.price}, ${tier.period}, ${name}, ${email}, ${phone || null}, ${carModel || null}, ${seatType || null}, ${normCarType}, ${notes || null}, ${date}, ${time}, ${'booked'}, ${event.data.id || null}, ${locationType ?? null}, ${locationType === 'my' ? (locationAddress ?? null) : null}, ${slug === 'custom' ? JSON.stringify(customFeatures || []) : null}, ${slug === 'custom' ? tier.price : null})
     `;
     } catch (e: unknown) {
       console.error('Failed to persist booking to Neon', e);

@@ -1,6 +1,8 @@
 /* eslint-disable @next/next/no-img-element */
 import * as React from 'react';
 
+type CarType = 'sedan' | 'van' | 'suv';
+
 export function BookingEmailToOwner(props: {
   name: string;
   email: string;
@@ -8,14 +10,17 @@ export function BookingEmailToOwner(props: {
   notes?: string;
   carModel?: string;
   seatType?: 'leather' | 'cloth' | string;
+  carType?: CarType | string;
   packageName: string;
+  price?: number;
   date: string;
   time: string;
   logoUrl?: string;
   locationType?: 'my' | 'shop';
   locationAddress?: string | null;
+  customFeatures?: string[];
 }) {
-  const { name, email, phone, notes, carModel, seatType, packageName, date, time, logoUrl, locationType, locationAddress } = props;
+  const { name, email, phone, notes, carModel, seatType, carType, packageName, price, date, time, logoUrl, locationType, locationAddress, customFeatures } = props;
   return (
     <div style={{ backgroundColor: '#0f0e0d', color: '#ffffff', fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', Arial, 'Noto Sans', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'", padding: '24px' }}>
       <table role="presentation" width="100%" cellPadding={0} cellSpacing={0} style={{ maxWidth: 640, margin: '0 auto', backgroundColor: '#151311', borderRadius: 16, overflow: 'hidden', border: '1px solid #2a2623' }}>
@@ -58,9 +63,25 @@ export function BookingEmailToOwner(props: {
                     <td style={cellLabelStyle}>Package</td>
                     <td style={cellValueStyle}>{packageName}</td>
                   </tr>
+                  {typeof price === 'number' && (
+                    <tr>
+                      <td style={cellLabelStyle}>Price</td>
+                      <td style={cellValueStyle}>${price}</td>
+                    </tr>
+                  )}
+                  {customFeatures && customFeatures.length > 0 && (
+                    <tr>
+                      <td style={{ ...cellLabelStyle, verticalAlign: 'top' }}>Services</td>
+                      <td style={{ ...cellValueStyle, whiteSpace: 'pre-wrap' }}>{customFeatures.map(f=>`• ${f}`).join('\n')}</td>
+                    </tr>
+                  )}
                   <tr>
                     <td style={cellLabelStyle}>Vehicle</td>
                     <td style={cellValueStyle}>{carModel || '—'}</td>
+                  </tr>
+                  <tr>
+                    <td style={cellLabelStyle}>Car type</td>
+                    <td style={cellValueStyle}>{carType ? (carType[0].toUpperCase() + carType.slice(1)) : 'Sedan'}</td>
                   </tr>
                   <tr>
                     <td style={cellLabelStyle}>Seat type</td>
@@ -103,8 +124,8 @@ export function BookingEmailToOwner(props: {
   );
 }
 
-export function BookingEmailToCustomer(props: { name: string; packageName: string; date: string; time: string; logoUrl?: string; carModel?: string; seatType?: 'leather' | 'cloth' | string; locationType?: 'my' | 'shop'; locationAddress?: string | null; }) {
-  const { name, packageName, date, time, logoUrl, carModel, seatType, locationType, locationAddress } = props;
+export function BookingEmailToCustomer(props: { name: string; packageName: string; date: string; time: string; logoUrl?: string; carModel?: string; seatType?: 'leather' | 'cloth' | string; carType?: CarType | string; locationType?: 'my' | 'shop'; locationAddress?: string | null; price?: number; customFeatures?: string[]; }) {
+  const { name, packageName, date, time, logoUrl, carModel, seatType, carType, locationType, locationAddress, price, customFeatures } = props;
   const shop = {
     name: process.env.SHOP_NAME || 'Precision Details',
     phone: process.env.SHOP_PHONE || '331-307-8784',
@@ -141,6 +162,12 @@ export function BookingEmailToCustomer(props: { name: string; packageName: strin
                     <td style={cellLabelStyle}>Package</td>
                     <td style={cellValueStyle}>{packageName}</td>
                   </tr>
+                  {typeof price === 'number' && (
+                    <tr>
+                      <td style={cellLabelStyle}>Price</td>
+                      <td style={cellValueStyle}>${price}</td>
+                    </tr>
+                  )}
                   <tr>
                     <td style={cellLabelStyle}>Date</td>
                     <td style={cellValueStyle}>{date}</td>
@@ -155,6 +182,10 @@ export function BookingEmailToCustomer(props: { name: string; packageName: strin
                       <td style={cellValueStyle}>{carModel}</td>
                     </tr>
                   )}
+                  <tr>
+                    <td style={cellLabelStyle}>Car type</td>
+                    <td style={cellValueStyle}>{carType ? (carType[0].toUpperCase() + carType.slice(1)) : 'Sedan'}</td>
+                  </tr>
                   {seatType && (
                     <tr>
                       <td style={cellLabelStyle}>Seat type</td>
@@ -175,6 +206,16 @@ export function BookingEmailToCustomer(props: { name: string; packageName: strin
                 <div style={{ marginTop: 16, padding: 12, backgroundColor: '#201d1a', border: '1px solid #2a2623', borderRadius: 12, color: '#c0bbb7', fontSize: 13 }}>
                   <div style={{ color: '#ffffff', fontWeight: 700, marginBottom: 6 }}>Service location</div>
                   <div><strong>Your address:</strong> {locationAddress || '—'}</div>
+                </div>
+              )}
+              {customFeatures && customFeatures.length > 0 && (
+                <div style={{ marginTop: 16 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 6 }}>Selected Services</div>
+                  <ul style={{ padding: 0, margin: 0, listStyle: 'none', fontSize: 13, color: '#c0bbb7', lineHeight: '18px' }}>
+                    {customFeatures.map(f => (
+                      <li key={f} style={{ margin: '2px 0' }}>• {f}</li>
+                    ))}
+                  </ul>
                 </div>
               )}
             </td>

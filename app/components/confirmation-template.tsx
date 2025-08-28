@@ -53,8 +53,8 @@ function formatTime12(t?: string) {
   return `${hh}:${mm} ${ampm}`;
 }
 
-export function UpdateBookingEmailToCustomer(props: { name: string; packageName: string; date: string; time: string; notes?: string; status?: string; logoUrl?: string; }) {
-  const { name, packageName, date, time, notes, status, logoUrl } = props;
+export function UpdateBookingEmailToCustomer(props: { name: string; packageName: string; date: string; time: string; notes?: string; status?: string; logoUrl?: string; price?: number; customFeatures?: string[]; carType?: 'sedan' | 'van' | 'suv' | string; }) {
+  const { name, packageName, date, time, notes, status, logoUrl, price, customFeatures, carType } = props;
   return (
     <div style={{ backgroundColor: '#0f0e0d', color: '#ffffff', fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', Arial, 'Noto Sans', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'", padding: '24px' }}>
       <table role="presentation" width="100%" cellPadding={0} cellSpacing={0} style={{ maxWidth: 640, margin: '0 auto', backgroundColor: '#151311', borderRadius: 16, overflow: 'hidden', border: '1px solid #2a2623' }}>
@@ -85,6 +85,12 @@ export function UpdateBookingEmailToCustomer(props: { name: string; packageName:
                     <td style={cellLabelStyle}>Package</td>
                     <td style={cellValueStyle}>{packageName}</td>
                   </tr>
+                  {typeof price === 'number' && (
+                    <tr>
+                      <td style={cellLabelStyle}>Price</td>
+                      <td style={cellValueStyle}>${price}</td>
+                    </tr>
+                  )}
                   <tr>
                     <td style={cellLabelStyle}>Date</td>
                     <td style={cellValueStyle}>{date}</td>
@@ -99,6 +105,16 @@ export function UpdateBookingEmailToCustomer(props: { name: string; packageName:
                       <td style={cellValueStyle}>{status}</td>
                     </tr>
                   )}
+                  {customFeatures && customFeatures.length > 0 && (
+                    <tr>
+                      <td style={{ ...cellLabelStyle, verticalAlign: 'top' }}>Services</td>
+                      <td style={{ ...cellValueStyle, whiteSpace: 'pre-wrap' }}>{customFeatures.map(f=>`• ${f}`).join('\n')}</td>
+                    </tr>
+                  )}
+                  <tr>
+                    <td style={cellLabelStyle}>Car type</td>
+                    <td style={cellValueStyle}>{carType ? (carType[0].toUpperCase() + carType.slice(1)) : 'Sedan'}</td>
+                  </tr>
                   {notes && (
                     <tr>
                       <td style={{ ...cellLabelStyle, verticalAlign: 'top' }}>Notes</td>
@@ -120,8 +136,8 @@ export function UpdateBookingEmailToCustomer(props: { name: string; packageName:
   );
 }
 
-export function CancellationEmailToCustomer(props: { name: string; packageName: string; date: string; time: string; logoUrl?: string; }) {
-  const { name, packageName, date, time, logoUrl } = props;
+export function CancellationEmailToCustomer(props: { name: string; packageName: string; date: string; time: string; logoUrl?: string; price?: number; customFeatures?: string[]; carType?: 'sedan' | 'van' | 'suv' | string; }) {
+  const { name, packageName, date, time, logoUrl, price, customFeatures, carType } = props;
   return (
     <div style={{ backgroundColor: '#0f0e0d', color: '#ffffff', fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', Arial, 'Noto Sans', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'", padding: '24px' }}>
       <table role="presentation" width="100%" cellPadding={0} cellSpacing={0} style={{ maxWidth: 640, margin: '0 auto', backgroundColor: '#151311', borderRadius: 16, overflow: 'hidden', border: '1px solid #2a2623' }}>
@@ -152,6 +168,12 @@ export function CancellationEmailToCustomer(props: { name: string; packageName: 
                     <td style={cellLabelStyle}>Package</td>
                     <td style={cellValueStyle}>{packageName}</td>
                   </tr>
+                  {typeof price === 'number' && (
+                    <tr>
+                      <td style={cellLabelStyle}>Price</td>
+                      <td style={cellValueStyle}>${price}</td>
+                    </tr>
+                  )}
                   <tr>
                     <td style={cellLabelStyle}>Date</td>
                     <td style={cellValueStyle}>{date}</td>
@@ -159,6 +181,16 @@ export function CancellationEmailToCustomer(props: { name: string; packageName: 
                   <tr>
                     <td style={cellLabelStyle}>Time</td>
                     <td style={cellValueStyle}>{formatTime12(time)}</td>
+                  </tr>
+                  {customFeatures && customFeatures.length > 0 && (
+                    <tr>
+                      <td style={{ ...cellLabelStyle, verticalAlign: 'top' }}>Services</td>
+                      <td style={{ ...cellValueStyle, whiteSpace: 'pre-wrap' }}>{customFeatures.map(f=>`• ${f}`).join('\n')}</td>
+                    </tr>
+                  )}
+                  <tr>
+                    <td style={cellLabelStyle}>Car type</td>
+                    <td style={cellValueStyle}>{carType ? (carType[0].toUpperCase() + carType.slice(1)) : 'Sedan'}</td>
                   </tr>
                 </tbody>
               </table>
@@ -184,8 +216,11 @@ export function DateTimeUpdatedEmailToCustomer(props: {
   newTime: string;
   notes?: string;
   logoUrl?: string;
+  price?: number;
+  customFeatures?: string[];
+  carType?: 'sedan' | 'van' | 'suv' | string;
 }) {
-  const { name, packageName, oldDate, oldTime, newDate, newTime, notes, logoUrl } = props;
+  const { name, packageName, oldDate, oldTime, newDate, newTime, notes, logoUrl, price, customFeatures, carType } = props;
   return (
     <div style={{ backgroundColor: '#0f0e0d', color: '#ffffff', fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', Arial, 'Noto Sans', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'", padding: '24px' }}>
       <table role="presentation" width="100%" cellPadding={0} cellSpacing={0} style={{ maxWidth: 640, margin: '0 auto', backgroundColor: '#151311', borderRadius: 16, overflow: 'hidden', border: '1px solid #2a2623' }}>
@@ -222,6 +257,22 @@ export function DateTimeUpdatedEmailToCustomer(props: {
                     <td style={cellLabelStyle}>New</td>
                     <td style={cellValueStyle}>{newDate} at {formatTime12(newTime)}</td>
                   </tr>
+                  {typeof price === 'number' && (
+                    <tr>
+                      <td style={cellLabelStyle}>Price</td>
+                      <td style={cellValueStyle}>${price}</td>
+                    </tr>
+                  )}
+                  {customFeatures && customFeatures.length > 0 && (
+                    <tr>
+                      <td style={{ ...cellLabelStyle, verticalAlign: 'top' }}>Services</td>
+                      <td style={{ ...cellValueStyle, whiteSpace: 'pre-wrap' }}>{customFeatures.map(f=>`• ${f}`).join('\n')}</td>
+                    </tr>
+                  )}
+                  <tr>
+                    <td style={cellLabelStyle}>Car type</td>
+                    <td style={cellValueStyle}>{carType ? (carType[0].toUpperCase() + carType.slice(1)) : 'Sedan'}</td>
+                  </tr>
                   {notes && (
                     <tr>
                       <td style={{ ...cellLabelStyle, verticalAlign: 'top' }}>Notes</td>
@@ -243,8 +294,8 @@ export function DateTimeUpdatedEmailToCustomer(props: {
   );
 }
 
-export function CompletedEmailToCustomer(props: { name: string; packageName: string; date: string; time: string; logoUrl?: string; }) {
-  const { name, packageName, date, time, logoUrl } = props;
+export function CompletedEmailToCustomer(props: { name: string; packageName: string; date: string; time: string; logoUrl?: string; price?: number; customFeatures?: string[]; carType?: 'sedan' | 'van' | 'suv' | string; }) {
+  const { name, packageName, date, time, logoUrl, price, customFeatures, carType } = props;
   return (
     <div style={{ backgroundColor: '#0f0e0d', color: '#ffffff', fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', Arial, 'Noto Sans', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'", padding: '24px' }}>
       <table role="presentation" width="100%" cellPadding={0} cellSpacing={0} style={{ maxWidth: 640, margin: '0 auto', backgroundColor: '#151311', borderRadius: 16, overflow: 'hidden', border: '1px solid #2a2623' }}>
@@ -269,6 +320,18 @@ export function CompletedEmailToCustomer(props: { name: string; packageName: str
             <td style={{ padding: 24 }}>
               <h1 style={{ margin: 0, fontSize: 22, lineHeight: '28px', fontWeight: 800 }}>Your booking is completed</h1>
               <p style={{ margin: '8px 0 0 0', color: '#c0bbb7', fontSize: 14 }}>Hi {name}, your {packageName} appointment on {date} at {formatTime12(time)} is completed. Thank you for choosing Precision Details.</p>
+              {typeof price === 'number' && (
+                <p style={{ margin: '12px 0 0 0', color: '#c0bbb7', fontSize: 13 }}><strong>Total:</strong> ${price}</p>
+              )}
+              {customFeatures && customFeatures.length > 0 && (
+                <div style={{ marginTop: 12 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 6 }}>Services Performed</div>
+                  <ul style={{ padding: 0, margin: 0, listStyle: 'none', fontSize: 13, color: '#c0bbb7', lineHeight: '18px' }}>
+                    {customFeatures.map(f => (<li key={f} style={{ margin: '2px 0' }}>• {f}</li>))}
+                  </ul>
+                </div>
+              )}
+              <p style={{ margin: '12px 0 0 0', color: '#c0bbb7', fontSize: 13 }}><strong>Car type:</strong> {carType ? (carType[0].toUpperCase() + carType.slice(1)) : 'Sedan'}</p>
               <div style={{ marginTop: 16, padding: 12, backgroundColor: '#201d1a', border: '1px solid #2a2623', borderRadius: 12, color: '#c0bbb7', fontSize: 12 }}>
                 Enjoy the shine! If anything needs a touch-up or you have questions, contact us at <a href="https://precisiondetails.co/contact/" style={{ color: '#c0bbb7', textDecoration: 'underline' }}>https://precisiondetails.co/contact/</a>.
               </div>
