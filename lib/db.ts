@@ -45,6 +45,14 @@ export async function ensureSchema() {
       updated_at timestamptz not null default now()
     );
   `;
+  // Generic key/value settings table (global discount etc)
+  await db`
+    create table if not exists settings (
+      key text primary key,
+      value text not null,
+      updated_at timestamptz not null default now()
+    )
+  `;
   await db`alter table bookings add column if not exists car_model text`;
   await db`alter table bookings add column if not exists seat_type text`;
   await db`alter table bookings add column if not exists car_type text`;
@@ -66,6 +74,13 @@ export async function ensureSchema() {
   // Now: enforce one booking per day only on weekdays (Mon-Fri), allow multiple on weekends.
   await db`drop index if exists uniq_one_booking_per_day`;
   await db`create unique index if not exists uniq_one_booking_on_weekdays on bookings (date) where (status != 'cancelled' and extract(dow from date) not in (0,6))`;
+
+  // Seed default discount (0) if not present
+  try {
+    await db`insert into settings (key, value) values ('global_discount_percent', '0') on conflict (key) do nothing`;
+  } catch (e) {
+    console.warn('Failed to seed default discount', e);
+  }
 }
 
 export type BookingRow = {

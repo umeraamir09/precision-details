@@ -3,6 +3,7 @@ import { google } from 'googleapis';
 import { Resend } from 'resend';
 import { getTierBySlug } from '@/lib/tiers';
 import { db, ensureSchema } from '@/lib/db';
+import { getGlobalDiscountPercent, applyPercentDiscount } from '@/lib/utils';
 import { describeServiceIds } from '@/lib/services';
 import { BookingEmailToCustomer, BookingEmailToOwner } from '@/app/components/booking-email-template';
 
@@ -87,6 +88,16 @@ export async function POST(request: Request) {
     customLines = lines; // 'Name - $Price'
   }
 
+  // Global discount before surcharges (discount only on base package price, not vehicle surcharge)
+  const discountPct = await getGlobalDiscountPercent();
+  let discountedBase = tier.price;
+  let originalBase: number | undefined;
+  if (discountPct > 0 && tier.price > 0) {
+    originalBase = tier.price;
+    const { discounted } = applyPercentDiscount(tier.price, discountPct);
+    discountedBase = discounted;
+  }
+
   // Vehicle type surcharge
   const normCarType: CarType = ((): CarType => {
     const ct = (carType || 'sedan').toString().toLowerCase();
@@ -95,7 +106,7 @@ export async function POST(request: Request) {
   let surcharge = 0;
   if (normCarType === 'van') surcharge = 10;
   else if (normCarType === 'suv') surcharge = 20;
-  tier.price += surcharge;
+  tier.price = discountedBase + surcharge;
 
   // After resolving the tier, decide if seatType is required. Exterior-focused
   // packages do not need seat type information.
@@ -186,14 +197,14 @@ export async function POST(request: Request) {
       from: 'Precision Details <noreply@umroo.art>',
       to: [ownerEmail],
       subject: `New booking: ${tier.name} on ${date} at ${time12}`,
-  react: BookingEmailToOwner({ name, email, phone, notes, carModel: carModel || undefined, seatType: seatType || undefined, carType: normCarType, packageName: tier.name, price: tier.price, date, time: time12, logoUrl, locationType, locationAddress: locationType === 'my' ? locationAddress || null : null, customFeatures: slug === 'custom' ? customLines : undefined }),
+  react: BookingEmailToOwner({ name, email, phone, notes, carModel: carModel || undefined, seatType: seatType || undefined, carType: normCarType, packageName: tier.name, price: tier.price, originalPrice: originalBase, discountPercent: discountPct>0 ? discountPct : undefined, date, time: time12, logoUrl, locationType, locationAddress: locationType === 'my' ? locationAddress || null : null, customFeatures: slug === 'custom' ? customLines : undefined }),
     });
 
     await resend.emails.send({
       from: 'Precision Details <noreply@umroo.art>',
       to: [email],
       subject: 'Your booking was received',
-  react: BookingEmailToCustomer({ name, packageName: tier.name, price: tier.price, date, time: time12, logoUrl, carModel: carModel || undefined, seatType: seatType || undefined, carType: normCarType, locationType, locationAddress: locationType === 'my' ? locationAddress || null : null, customFeatures: slug === 'custom' ? customLines : undefined }),
+  react: BookingEmailToCustomer({ name, packageName: tier.name, price: tier.price, originalPrice: originalBase, discountPercent: discountPct>0 ? discountPct : undefined, date, time: time12, logoUrl, carModel: carModel || undefined, seatType: seatType || undefined, carType: normCarType, locationType, locationAddress: locationType === 'my' ? locationAddress || null : null, customFeatures: slug === 'custom' ? customLines : undefined }),
     });
 
     

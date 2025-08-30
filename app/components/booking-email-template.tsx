@@ -13,6 +13,8 @@ export function BookingEmailToOwner(props: {
   carType?: CarType | string;
   packageName: string;
   price?: number;
+  originalPrice?: number;
+  discountPercent?: number;
   date: string;
   time: string;
   logoUrl?: string;
@@ -20,7 +22,7 @@ export function BookingEmailToOwner(props: {
   locationAddress?: string | null;
   customFeatures?: string[];
 }) {
-  const { name, email, phone, notes, carModel, seatType, carType, packageName, price, date, time, logoUrl, locationType, locationAddress, customFeatures } = props;
+  const { name, email, phone, notes, carModel, seatType, carType, packageName, price, originalPrice, discountPercent, date, time, logoUrl, locationType, locationAddress, customFeatures } = props;
   return (
     <div style={{ backgroundColor: '#0f0e0d', color: '#ffffff', fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', Arial, 'Noto Sans', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'", padding: '24px' }}>
       <table role="presentation" width="100%" cellPadding={0} cellSpacing={0} style={{ maxWidth: 640, margin: '0 auto', backgroundColor: '#151311', borderRadius: 16, overflow: 'hidden', border: '1px solid #2a2623' }}>
@@ -63,10 +65,10 @@ export function BookingEmailToOwner(props: {
                     <td style={cellLabelStyle}>Package</td>
                     <td style={cellValueStyle}>{packageName}</td>
                   </tr>
-                  {typeof price === 'number' && (
+          {typeof price === 'number' && (
                     <tr>
                       <td style={cellLabelStyle}>Price</td>
-                      <td style={cellValueStyle}>${price}</td>
+            <td style={cellValueStyle}>${price}{originalPrice && originalPrice>price ? <span style={{ marginLeft:6, textDecoration:'line-through', color:'#8e8781', fontSize:12 }}>${originalPrice}</span> : null}{discountPercent && discountPercent>0 ? <span style={{ marginLeft:6, color:'#fb6703', fontSize:12 }}>(-{discountPercent}%)</span> : null}</td>
                     </tr>
                   )}
                   {customFeatures && customFeatures.length > 0 && (
@@ -124,8 +126,8 @@ export function BookingEmailToOwner(props: {
   );
 }
 
-export function BookingEmailToCustomer(props: { name: string; packageName: string; date: string; time: string; logoUrl?: string; carModel?: string; seatType?: 'leather' | 'cloth' | string; carType?: CarType | string; locationType?: 'my' | 'shop'; locationAddress?: string | null; price?: number; customFeatures?: string[]; }) {
-  const { name, packageName, date, time, logoUrl, carModel, seatType, carType, locationType, locationAddress, price, customFeatures } = props;
+export function BookingEmailToCustomer(props: { name: string; packageName: string; date: string; time: string; logoUrl?: string; carModel?: string; seatType?: 'leather' | 'cloth' | string; carType?: CarType | string; locationType?: 'my' | 'shop'; locationAddress?: string | null; price?: number; originalPrice?: number; discountPercent?: number; customFeatures?: string[]; }) {
+  const { name, packageName, date, time, logoUrl, carModel, seatType, carType, locationType, locationAddress, price, originalPrice, discountPercent, customFeatures } = props;
   const shop = {
     name: process.env.SHOP_NAME || 'Precision Details',
     phone: process.env.SHOP_PHONE || '331-307-8784',
@@ -162,10 +164,10 @@ export function BookingEmailToCustomer(props: { name: string; packageName: strin
                     <td style={cellLabelStyle}>Package</td>
                     <td style={cellValueStyle}>{packageName}</td>
                   </tr>
-                  {typeof price === 'number' && (
+          {typeof price === 'number' && (
                     <tr>
                       <td style={cellLabelStyle}>Price</td>
-                      <td style={cellValueStyle}>${price}</td>
+            <td style={cellValueStyle}>${price}{originalPrice && originalPrice>price ? <span style={{ marginLeft:6, textDecoration:'line-through', color:'#8e8781', fontSize:12 }}>${originalPrice}</span> : null}{discountPercent && discountPercent>0 ? <span style={{ marginLeft:6, color:'#fb6703', fontSize:12 }}>(-{discountPercent}%)</span> : null}</td>
                     </tr>
                   )}
                   <tr>

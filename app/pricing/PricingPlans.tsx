@@ -3,11 +3,25 @@ import Link from "next/link";
 import { useState, useCallback, useEffect, useRef } from "react";
 import { Button } from "../components/shadcn/button";
 import Reveal from "../components/Reveal";
-import { tiers } from "@/lib/tiers";
+import { tiers, type Tier } from "@/lib/tiers";
+import { applyPercentDiscount } from '@/lib/utils';
 
-export default function PricingPlans() {
+export default function PricingPlans({ initialDiscount = 0 }: { initialDiscount?: number }) {
   // Collect and sort all tiers cheapest -> most expensive regardless of category
-  const allTiers = [...tiers].sort((a,b) => a.price - b.price);
+  const [discountPct, setDiscountPct] = useState(initialDiscount);
+  // Refresh in background to pick up any change after initial server render
+  useEffect(()=>{ fetch('/api/discount').then(r=>r.json()).then(j=>{ if (Number.isFinite(j?.percent)) setDiscountPct(prev => {
+    const next = Math.max(0, Math.min(90, Math.round(j.percent)));
+    return next !== prev ? next : prev;
+  }); }).catch(()=>{}); }, []);
+  interface TierWithOrig extends Tier { __original?: number }
+  const allTiers: TierWithOrig[] = [...tiers].map((t): TierWithOrig => {
+    if (discountPct>0 && t.price>0) {
+      const { discounted } = applyPercentDiscount(t.price, discountPct);
+      return { ...t, price: discounted, __original: t.price };
+    }
+    return t;
+  }).sort((a,b)=> a.price - b.price);
 
   // Responsive cards per slide
   const [cardsPerSlide, setCardsPerSlide] = useState(1);
@@ -91,7 +105,7 @@ export default function PricingPlans() {
     };
   }, [go]);
 
-  const renderCard = (tier: (typeof tiers)[number], idx: number, baseIndex = 0) => {
+  const renderCard = (tier: TierWithOrig, idx: number, baseIndex = 0) => {
     const comingSoon = tier.comingSoon;
     const isStarting = tier.startingAt;
     return (
@@ -119,7 +133,7 @@ export default function PricingPlans() {
         )}
         <h3 className="font-heading text-2xl text-white">{tier.name}</h3>
         <div className="mt-4 flex items-baseline gap-1">
-          <span className="text-4xl font-heading text-white">${tier.price}</span>
+          <span className="text-4xl font-heading text-white flex items-baseline gap-2">{tier.__original ? <><span className="line-through text-white/40 text-2xl">${tier.__original}</span> <span>${tier.price}</span></> : <>${tier.price}</>}</span>
           <span className="text-sm text-muted-foreground">/{tier.period}</span>
         </div>
         <ul className="mt-6 space-y-3 text-sm text-muted-foreground flex-1">

@@ -1,5 +1,6 @@
 "use client";
 import { useState, useMemo, useEffect } from 'react';
+import { applyPercentDiscount } from '@/lib/utils';
 import { Button } from '@/app/components/shadcn/button';
 import { useRouter } from 'next/navigation';
 import Calendar, { type CalendarProps } from '@/app/components/shadcn/calendar';
@@ -89,7 +90,10 @@ export default function CustomBuilder() {
 
   const baseTotal = useMemo(() => selected.reduce((sum, id) => sum + (SERVICE_OPTIONS.find(s => s.id===id)?.price || 0), 0), [selected]);
   const surcharge = useMemo(() => carType === 'van' ? 10 : (carType === 'suv' ? 20 : 0), [carType]);
-  const total = baseTotal + surcharge;
+  const [discountPct, setDiscountPct] = useState(0);
+  useEffect(()=>{ fetch('/api/discount').then(r=>r.json()).then(j=>{ if (Number.isFinite(j?.percent)) setDiscountPct(Math.round(j.percent)); }).catch(()=>{}); }, []);
+  const discounted = useMemo(()=> discountPct>0 ? applyPercentDiscount(baseTotal, discountPct).discounted : baseTotal, [baseTotal, discountPct]);
+  const total = discounted + surcharge;
 
   // Hide seat type when every selected service belongs to the Exterior group.
   const hideSeatType = useMemo(() => {
@@ -193,8 +197,11 @@ export default function CustomBuilder() {
             </ul>
             <div className="pt-2 border-t border-white/10 flex items-center justify-between">
               <span className="text-sm text-white/80">Subtotal</span>
-              <span className="text-2xl font-heading text-white">${total}</span>
+              <span className="text-2xl font-heading text-white flex items-baseline gap-2">{discountPct>0 && baseTotal>0 ? <><span className="line-through text-white/40 text-lg">${baseTotal}</span> <span>${total}</span></> : <>${total}</>}</span>
             </div>
+            {discountPct>0 && baseTotal>0 && (
+              <div className="text-[10px] text-emerald-400 -mt-2">Saved {discountPct}%</div>
+            )}
             {surcharge > 0 && (
               <div className="text-[10px] text-muted-foreground -mt-2">Includes ${surcharge === 10 ? '+$10 van' : '+$20 SUV'} surcharge</div>
             )}

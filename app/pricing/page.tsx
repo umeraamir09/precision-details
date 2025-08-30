@@ -1,12 +1,16 @@
 import Reveal from "../components/Reveal";
 import PricingPlans from "./PricingPlans";
+import { getGlobalDiscountPercent } from '@/lib/utils';
 
 export const metadata = {
   title: "Pricing | Precision Details",
   description: "Choose the perfect detailing package for your car.",
 };
 
-export default function PricingPage() {
+export const dynamic = 'force-dynamic';
+
+export default async function PricingPage() {
+  const discount = await getGlobalDiscountPercent();
   return (
     <main className="min-h-svh bg-background">
       <section className="mx-auto max-w-7xl px-6 py-16 lg:px-8">
@@ -16,7 +20,7 @@ export default function PricingPage() {
             <p className="mt-4 text-muted-foreground">Flexible packages to fit every car and budget. No hidden fees.</p>
           </Reveal>
         </div>
-        <PricingPlans />
+  <PricingPlans initialDiscount={discount} />
       </section>
     </main>
   );

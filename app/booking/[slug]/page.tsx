@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
-import Reveal from '@/app/components/Reveal';
 import BookingSuccessBanner from '@/app/components/BookingSuccessBanner';
 import { getTierBySlug, type Tier } from '@/lib/tiers';
+import { getGlobalDiscountPercent, applyPercentDiscount } from '@/lib/utils';
 import BookingClient from './BookingClient';
 
 export default async function BookingPage({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams?: Promise<Record<string, string | string[]>> }) {
@@ -23,6 +23,13 @@ export default async function BookingPage({ params, searchParams }: { params: Pr
       startingAt: true,
     } as Tier;
   }
+  // Apply discount server-side so initial render shows discounted pricing
+  const discountPct = await getGlobalDiscountPercent();
+  if (tier && discountPct > 0 && tier.price > 0) {
+    const original = tier.price;
+    const { discounted } = applyPercentDiscount(original, discountPct);
+    tier = { ...tier, __originalPrice: original, price: discounted } as Tier & { __originalPrice: number };
+  }
   const tierObj: Tier | null = tier || null;
   if (!tierObj) return notFound();
 
@@ -34,7 +41,7 @@ export default async function BookingPage({ params, searchParams }: { params: Pr
       </div>
 
       <BookingSuccessBanner />
-      <section className="mx-auto max-w-6xl px-6 py-10 lg:py-14">
+  <section className="mx-auto max-w-7xl px-6 py-10 lg:py-14">
         <div className="mb-8 flex flex-col gap-2 text-center lg:mb-12">
           <h1 className="font-heading text-2xl sm:text-3xl lg:text-4xl text-white tracking-tight">Book {tierObj.name}</h1>
           <p className="text-sm text-muted-foreground">Lock in your spot — quick, clear, and secure.</p>

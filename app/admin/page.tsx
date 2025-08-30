@@ -1,4 +1,5 @@
 import { Suspense } from 'react';
+import AdminDiscount from './AdminDiscount';
 import AdminLogout from './signout';
 import AdminBookings from './table';
 
@@ -12,10 +13,13 @@ export default function AdminPage() {
         <AdminLogout />
       </div>
       <p className="text-sm text-muted-foreground mt-2">View, update, or cancel bookings.</p>
-      <div className="mt-6 rounded-2xl border border-white/10 bg-card/70 p-4 backdrop-blur-xl">
-        <Suspense fallback={<div className="text-sm text-muted-foreground">Loading…</div>}>
-          <AdminBookings />
-        </Suspense>
+      <div className="mt-6 grid gap-6">
+        <AdminDiscount />
+        <div className="rounded-2xl border border-white/10 bg-card/70 p-4 backdrop-blur-xl">
+          <Suspense fallback={<div className="text-sm text-muted-foreground">Loading…</div>}>
+            <AdminBookings />
+          </Suspense>
+        </div>
       </div>
     </main>
   );

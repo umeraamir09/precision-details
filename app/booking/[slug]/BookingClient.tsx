@@ -1,24 +1,35 @@
 "use client";
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
+import { applyPercentDiscount } from '@/lib/utils';
 import Reveal from '@/app/components/Reveal';
 import BookingForm from './BookingForm';
 import type { Tier } from '@/lib/tiers';
 
 export default function BookingClient({ tier, slug }: { tier: Tier; slug: string }) {
   const [carType, setCarType] = useState<'sedan' | 'van' | 'suv'>('sedan');
-  const basePrice = tier.price; // base price passed from server (custom builder already encoded base)
+  const [discountPct, setDiscountPct] = useState(0);
+  useEffect(()=>{ fetch('/api/discount').then(r=>r.json()).then(j=>{ if (Number.isFinite(j?.percent)) setDiscountPct(Math.round(j.percent)); }).catch(()=>{}); }, []);
+  const basePrice = tier.price; // already discounted server-side if SSR had discount, but we keep dynamic in case admin changes while on page
+  // Support optional originalPrice metadata (if provided by caller)
+  const tierWithMeta = tier as Tier & { __originalPrice?: number };
+  const originalPrice = (discountPct>0) ? tierWithMeta.__originalPrice : undefined;
   const surcharge = carType === 'van' ? 10 : carType === 'suv' ? 20 : 0;
-  const displayPrice = basePrice + surcharge;
+  let displayBase = basePrice;
+  if (discountPct>0 && !originalPrice) {
+    const { discounted } = applyPercentDiscount(basePrice, discountPct);
+    displayBase = discounted;
+  }
+  const displayPrice = displayBase + surcharge;
 
   const handleCarTypeChange = useCallback((ct: 'sedan' | 'van' | 'suv') => {
     setCarType(ct);
   }, []);
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[minmax(0,0.9fr)_1.1fr] lg:gap-8 items-start">
+    <div className="grid gap-8 xl:gap-10 lg:grid-cols-[380px_minmax(0,1fr)] 2xl:grid-cols-[400px_minmax(0,1fr)] items-start">
       <Reveal className="lg:sticky lg:top-6">
-        <div className="rounded-2xl bg-gradient-to-br from-white/10 to-white/5 p-[1px] shadow-[0_10px_30px_-10px_rgba(0,0,0,0.5)]">
-          <div className="rounded-2xl border border-white/10 bg-card/70 p-6 backdrop-blur-xl">
+        <div className="rounded-2xl bg-gradient-to-br from-white/10 to-white/5 p-[1px] shadow-[0_8px_40px_-12px_rgba(0,0,0,0.55)]">
+          <div className="rounded-2xl border border-white/10 bg-card/70 px-6 py-7 backdrop-blur-xl">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs text-primary">
@@ -29,7 +40,12 @@ export default function BookingClient({ tier, slug }: { tier: Tier; slug: string
                 <p className="mt-1 text-sm text-muted-foreground">Professional auto detailing package</p>
               </div>
               <div className="text-right">
-                <div className="font-heading text-3xl text-white">${displayPrice}</div>
+                <div className="font-heading text-3xl text-white flex flex-col items-end">
+                  {discountPct>0 && surcharge===0 ? (
+                    <span className="text-sm text-white/50 line-through">${originalPrice ?? basePrice}</span>
+                  ) : null}
+                  <span>${displayPrice}</span>
+                </div>
                 <div className="text-xs text-muted-foreground">tax included</div>
                 {surcharge > 0 && (
                   <div className="mt-1 text-[10px] text-muted-foreground">Includes {surcharge === 10 ? '+$10 van' : '+$20 SUV'} surcharge</div>
@@ -65,9 +81,11 @@ export default function BookingClient({ tier, slug }: { tier: Tier; slug: string
         </div>
       </Reveal>
       <Reveal>
-        <div className="rounded-2xl bg-gradient-to-br from-white/10 to-white/5 p-[1px] shadow-[0_10px_30px_-10px_rgba(0,0,0,0.5)]">
-          <div className="rounded-2xl border border-white/10 bg-card/70 p-6 backdrop-blur-xl">
-            <BookingForm slug={slug} onCarTypeChange={handleCarTypeChange} />
+        <div className="w-full">
+          <div className="rounded-2xl bg-gradient-to-br from-white/10 to-white/5 p-[1px] shadow-[0_8px_40px_-12px_rgba(0,0,0,0.55)]">
+            <div className="rounded-2xl border border-white/10 bg-card/70 px-6 md:px-8 py-8 backdrop-blur-xl">
+              <BookingForm slug={slug} onCarTypeChange={handleCarTypeChange} />
+            </div>
           </div>
         </div>
       </Reveal>

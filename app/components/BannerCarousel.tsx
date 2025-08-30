@@ -1,8 +1,19 @@
-"use client"
-import React from "react";
+"use client";
+import React, { useEffect, useState } from "react";
 
-export default function BannerCarousel() {
-  const message = "BIG SALE — 20% OFF FROM AUG - NOV — BOOK NOW";
+export default function BannerCarousel({ initialPercent = 0 }: { initialPercent?: number }) {
+  const [percent, setPercent] = useState<number>(initialPercent);
+  // Background refresh (non-blocking) after mount
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/discount')
+      .then(r => r.json())
+      .then(j => { if (!cancelled && Number.isFinite(j?.percent)) setPercent(p => { const n = Math.round(j.percent); return n !== p ? n : p; }); })
+      .catch(()=>{});
+    return () => { cancelled = true; };
+  }, []);
+  if (!percent) return null;
+  const message = `${percent}% OFF — LIMITED TIME — BOOK NOW`;
 
   return (
     <div className="w-full bg-gradient-to-r from-primary/95 to-[#ffb37a] text-white overflow-hidden">

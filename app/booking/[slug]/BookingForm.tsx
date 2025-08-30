@@ -70,6 +70,8 @@ export default function BookingForm({ slug, onCarTypeChange }: { slug: string; o
   const [errors, setErrors] = useState<{ email?: string; phone?: string } | null>(null);
   const [bookedDates, setBookedDates] = useState<string[]>([]);
   const [existingWeekendStarts, setExistingWeekendStarts] = useState<string[]>([]);
+  const [step, setStep] = useState<0 | 1 | 2 | 3>(0);
+  const [maxStep, setMaxStep] = useState<0 | 1 | 2 | 3>(0); // highest unlocked step
 
   const fromDate = useMemo(() => {
     const d = new Date(); d.setHours(0,0,0,0); return d;
@@ -159,6 +161,7 @@ export default function BookingForm({ slug, onCarTypeChange }: { slug: string; o
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+  if (step !== 3) return; // only submit on final review step
     if (!date || !time) { setStatus('Please select a date and time.'); return; }
     if (!hideSeatType && !form.seatType) { setStatus('Please choose a seat type.'); return; }
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -212,12 +215,60 @@ export default function BookingForm({ slug, onCarTypeChange }: { slug: string; o
     }
   }
 
+  function validateStep(current: number): boolean {
+    setStatus(null);
+    if (current === 0) {
+      // Basic details validation
+      if (!form.name || !form.email) { setStatus('Name & email required.'); return false; }
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; if (!emailRegex.test(form.email)) { setStatus('Enter a valid email.'); return false; }
+      if (!hideSeatType && !form.seatType) { setStatus('Seat type required.'); return false; }
+      if (locationType === 'my' && !locationAddress) { setStatus('Address required for mobile service.'); return false; }
+      return true;
+    }
+    if (current === 1) { if (!date) { setStatus('Pick a date.'); return false; } return true; }
+    if (current === 2) { if (!time) { setStatus('Pick a time.'); return false; } return true; }
+    return true;
+  }
+
+  function goNext() {
+    if (!validateStep(step)) return;
+    setStep(s => (s < 3 ? ((s + 1) as typeof step) : s));
+    setMaxStep(m => (m < 3 ? ((Math.max(m, (step + 1)) as typeof maxStep)) : m));
+  }
+  function goPrev() { setStep(s => (s > 0 ? ((s - 1) as typeof step) : s)); }
+
+  function jumpTo(target: 0 | 1 | 2 | 3) {
+    if (target <= maxStep) setStep(target);
+  }
+
   return (
-    <form onSubmit={onSubmit} className="grid gap-8">
-  <div className="grid gap-4">
+    <form onSubmit={onSubmit} className="relative grid gap-14 max-w-3xl 2xl:max-w-4xl">
+      {/* Progress indicator (clickable) */}
+      <ol className="hidden md:flex items-center gap-6 text-xs font-medium tracking-wide">
+        {([
+          { id:0, label:'Details' },
+          { id:1, label:'Date' },
+          { id:2, label:'Time' },
+          { id:3, label:'Confirm' },
+        ] as const).map(s => {
+          const active = step === s.id;
+          const unlocked = s.id <= maxStep + 1; // allow next immediate step once previous valid
+          const completed = s.id < step;
+          const color = active ? 'text-primary' : completed ? 'text-primary/70' : (s.id <= maxStep ? 'text-white' : 'text-muted-foreground/40');
+          return (
+            <li key={s.id} className={`${color} transition`}>
+              <button type="button" onClick={()=>jumpTo(s.id as 0|1|2|3)} disabled={!unlocked || s.id>maxStep} className={`inline-flex items-center ${!unlocked || s.id>maxStep ? 'cursor-not-allowed opacity-40' : 'hover:opacity-90'}`} aria-current={active ? 'step' : undefined}>
+                <span className={`mr-2 inline-flex h-6 w-6 items-center justify-center rounded-full border text-[11px] ${active ? 'border-primary bg-primary/10' : completed ? 'border-primary/60 bg-primary/10' : 'border-current'} ${!unlocked?'opacity-40':''}`}>{s.id+1}</span>{s.label}
+              </button>
+            </li>
+          );
+        })}
+      </ol>
+  {step === 0 && (
+  <div className="grid gap-5 rounded-2xl border border-white/10 bg-background/60 px-6 pt-6 pb-7 md:px-8 md:pt-7 md:pb-8 backdrop-blur-md shadow-sm animate-in fade-in slide-in-from-bottom-2">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-medium text-white/90">Your details</h3>
-          <span className="text-xs text-muted-foreground">We&apos;ll send confirmation here</span>
+          <h3 className="text-base font-medium text-white/90">Contact information</h3>
+          <span className="text-[11px] text-muted-foreground">We&apos;ll send confirmation here</span>
         </div>
         <div className="h-px w-full bg-gradient-to-r from-transparent via-white/10 to-transparent" />
 
@@ -265,16 +316,26 @@ export default function BookingForm({ slug, onCarTypeChange }: { slug: string; o
             />
           </div>
           <div className="sm:col-span-2">
-            <label className="text-xs text-muted-foreground">Car type</label>
-            <select
-              value={form.carType}
-              onChange={(e)=>{ const ct = e.target.value as 'sedan' | 'van' | 'suv'; setForm(v=>({...v, carType: ct})); onCarTypeChange?.(ct); }}
-              className="mt-1 w-full rounded-lg border border-white/10 bg-background/60 text-white px-3 py-2 text-sm outline-none transition focus-visible:border-primary/40 focus-visible:ring-2 focus-visible:ring-primary/20"
-            >
-              <option value="sedan">Sedan (default)</option>
-              <option value="van">Van (+$10)</option>
-              <option value="suv">SUV (+$20)</option>
-            </select>
+            <label className="text-xs text-muted-foreground flex items-center justify-between">Car type <span className="text-[10px] text-muted-foreground/70">Affects time & price</span></label>
+            <div className="mt-2 grid grid-cols-3 gap-2">
+              {(['sedan','van','suv'] as const).map(ct => {
+                const label = ct === 'sedan' ? 'Sedan' : ct === 'van' ? 'Van' : 'SUV';
+                const up = ct === 'van' ? '+$10' : ct === 'suv' ? '+$20' : '—';
+                const active = form.carType === ct;
+                return (
+                  <button
+                    key={ct}
+                    type="button"
+                    onClick={()=>{ setForm(v=>({...v, carType: ct})); onCarTypeChange?.(ct); }}
+                    className={`relative rounded-lg border px-3 py-2 text-left text-xs transition focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${active ? 'border-primary/50 bg-primary/15 text-primary shadow-inner ring-1 ring-primary/30' : 'border-white/10 bg-background/40 text-white/80 hover:bg-background/60'}`}
+                    aria-pressed={active}
+                  >
+                    <span className="block font-medium text-[12px]">{label}</span>
+                    <span className="text-[10px] text-muted-foreground">{up}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
           { slug !== 'exterior' && (
           <div className="sm:col-span-2">
@@ -303,43 +364,52 @@ export default function BookingForm({ slug, onCarTypeChange }: { slug: string; o
           </div>
           <div className="sm:col-span-2">
             <label className="text-xs text-muted-foreground">Service location</label>
-            <div className="mt-2 grid gap-3">
-              <div className="flex items-center gap-4">
-                <label className="inline-flex items-center gap-2 text-sm text-white">
-                  <label className="inline-flex items-center gap-2 text-sm text-white">
-                  <input type="radio" name="location" value="shop" checked={locationType==='shop'} onChange={()=>setLocationType('shop')} />
-                    Precision Details Location
-                </label>
-                  <input type="radio" name="location" value="my" checked={locationType==='my'} onChange={()=>setLocationType('my')} />
-                  My Location
-                </label>
-              </div>
-              {locationType==='my' ? (
-                <input
-                  value={locationAddress}
-                  onChange={(e)=>setLocationAddress(e.target.value)}
-                  required
-                  className="w-full rounded-lg border border-white/10 bg-background/60 px-3 py-2 text-sm text-white placeholder:text-muted-foreground/70 outline-none transition focus-visible:border-primary/40 focus-visible:ring-2 focus-visible:ring-primary/20"
-                  placeholder="Enter your address (street, city, zip)"
-                />
-              ) : (
-                <div className="rounded-lg border border-white/10 bg-background/50 p-4 text-sm text-muted-foreground">
-                  <div className="text-white font-medium">Precision Details</div>
-                  <div>+1 331 307 8784</div>
-                  <div>contact@precisiondetails.co</div>
-                  <div>Glen Ellyn, IL 1137 Heather Lane</div>
-                  <div className="mt-2 text-xs">We&apos;ll include these details in your confirmation email.</div>
+            <div className="mt-3 grid gap-4 md:grid-cols-2">
+              <button type="button" onClick={()=>setLocationType('shop')} className={`relative rounded-xl border p-4 text-left transition ${locationType==='shop' ? 'border-primary/60 bg-primary/10 ring-2 ring-primary/20' : 'border-white/10 bg-background/40 hover:bg-background/60'}`}>
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <div className="text-sm font-medium text-white">At Our Location</div>
+                    <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">Drop off and pick up when finished.</p>
+                  </div>
+                  <input type="radio" className="mt-1" checked={locationType==='shop'} readOnly />
                 </div>
-              )}
+                {locationType==='shop' && (
+                  <div className="mt-3 rounded-lg bg-background/50 p-3 text-[11px] text-muted-foreground">
+                    Glen Ellyn, IL 1137 Heather Lane<br/>+1 331 307 8784<br/>contact@precisiondetails.co
+                  </div>
+                )}
+              </button>
+              <button type="button" onClick={()=>setLocationType('my')} className={`relative rounded-xl border p-4 text-left transition ${locationType==='my' ? 'border-primary/60 bg-primary/10 ring-2 ring-primary/20' : 'border-white/10 bg-background/40 hover:bg-background/60'}`}>
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <div className="text-sm font-medium text-white">My Location</div>
+                    <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">We travel to you (address required).</p>
+                  </div>
+                  <input type="radio" className="mt-1" checked={locationType==='my'} readOnly />
+                </div>
+                {locationType==='my' && (
+                  <div className="mt-4">
+                    <input
+                      value={locationAddress}
+                      onChange={(e)=>setLocationAddress(e.target.value)}
+                      required
+                      className="w-full rounded-lg border border-white/10 bg-background/60 px-3 py-2 text-sm text-white placeholder:text-muted-foreground/70 outline-none transition focus-visible:border-primary/40 focus-visible:ring-2 focus-visible:ring-primary/20"
+                      placeholder="Street, City, Zip"
+                    />
+                  </div>
+                )}
+              </button>
             </div>
           </div>
         </div>
       </div>
+  )}
 
-      <div className="grid gap-4">
+  {step === 1 && (
+  <div className="grid gap-5 rounded-2xl border border-white/10 bg-background/60 px-6 pt-6 pb-7 md:px-8 md:pt-7 md:pb-8 backdrop-blur-md shadow-sm animate-in fade-in slide-in-from-bottom-2">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-medium text-white/90">Choose date</h3>
-          <span className="text-xs text-muted-foreground">Next 30 days</span>
+          <h3 className="text-base font-medium text-white/90">Select date</h3>
+          <span className="text-[11px] text-muted-foreground">Next 30 days</span>
         </div>
         <div className="h-px w-full bg-gradient-to-r from-transparent via-white/10 to-transparent" />
 
@@ -358,14 +428,16 @@ export default function BookingForm({ slug, onCarTypeChange }: { slug: string; o
           />
         </div>
       </div>
+  )}
 
-      <div className="grid gap-4">
+  {step === 2 && (
+  <div className="grid gap-5 rounded-2xl border border-white/10 bg-background/60 px-6 pt-6 pb-7 md:px-8 md:pt-7 md:pb-8 backdrop-blur-md shadow-sm animate-in fade-in slide-in-from-bottom-2">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-medium text-white/90">Choose time</h3>
+          <h3 className="text-base font-medium text-white/90">Select time</h3>
           {date ? (
-            <span className="text-xs text-muted-foreground">{date.toLocaleDateString()}</span>
+            <span className="text-[11px] text-muted-foreground">{date.toLocaleDateString()}</span>
           ) : (
-            <span className="text-xs text-muted-foreground">Pick a date first</span>
+            <span className="text-[11px] text-muted-foreground">Pick a date first</span>
           )}
         </div>
         <div className="h-px w-full bg-gradient-to-r from-transparent via-white/10 to-transparent" />
@@ -413,10 +485,71 @@ export default function BookingForm({ slug, onCarTypeChange }: { slug: string; o
           })}
         </div>
       </div>
+      )}
 
-      <div className="flex items-center justify-between gap-3">
-        <p className="text-xs text-muted-foreground"></p>
-        <Button type="submit" className="rounded-full px-5">Confirm booking</Button>
+      {step === 3 && (
+        <div className="grid gap-5 rounded-2xl border border-white/10 bg-background/60 px-6 pt-6 pb-8 md:px-8 md:pt-7 md:pb-10 backdrop-blur-md shadow-sm animate-in fade-in slide-in-from-bottom-2">
+          <div className="flex items-center justify-between">
+            <h3 className="text-base font-medium text-white/90">Review & confirm</h3>
+            <span className="text-[11px] text-muted-foreground">Almost done</span>
+          </div>
+          <div className="h-px w-full bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+          <div className="grid gap-6 text-sm">
+            <div className="grid gap-2">
+              <div className="flex items-center justify-between">
+                <h4 className="text-white/80 font-medium">Contact</h4>
+                <button type="button" onClick={()=>jumpTo(0)} className="text-[11px] text-primary hover:underline">Change</button>
+              </div>
+              <p className="text-muted-foreground leading-relaxed whitespace-pre-line">{form.name}\n{form.email}{form.phone?`\n${form.phone}`:''}</p>
+            </div>
+            <div className="grid gap-2">
+              <div className="flex items-center justify-between">
+                <h4 className="text-white/80 font-medium">Vehicle</h4>
+                <button type="button" onClick={()=>jumpTo(0)} className="text-[11px] text-primary hover:underline">Change</button>
+              </div>
+              <p className="text-muted-foreground leading-relaxed">{form.carModel || '—'}<br/>Type: {form.carType}{!hideSeatType?` • Seats: ${form.seatType || '—'}`:''}</p>
+            </div>
+            <div className="grid gap-2">
+              <div className="flex items-center justify-between">
+                <h4 className="text-white/80 font-medium">Location</h4>
+                <button type="button" onClick={()=>jumpTo(0)} className="text-[11px] text-primary hover:underline">Change</button>
+              </div>
+              <p className="text-muted-foreground leading-relaxed">{locationType === 'shop' ? 'Precision Details (shop)' : (locationAddress || '—')}</p>
+            </div>
+            <div className="grid gap-2">
+              <div className="flex items-center justify-between">
+                <h4 className="text-white/80 font-medium">Schedule</h4>
+                <button type="button" onClick={()=>jumpTo(date?2:1)} className="text-[11px] text-primary hover:underline">Change</button>
+              </div>
+              <p className="text-muted-foreground leading-relaxed">{date ? date.toDateString() : '—'}{time?` at ${format12h(time)}`:''}</p>
+            </div>
+            {form.notes && (
+              <div className="grid gap-2">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-white/80 font-medium">Notes</h4>
+                  <button type="button" onClick={()=>jumpTo(0)} className="text-[11px] text-primary hover:underline">Change</button>
+                </div>
+                <p className="text-muted-foreground whitespace-pre-line text-sm leading-relaxed">{form.notes}</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      <div className="sticky bottom-0 z-10 mt-2 flex items-center justify-between gap-4 rounded-xl border border-white/10 bg-background/80 px-5 py-4 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="flex items-center gap-3">
+          {step > 0 && (
+            <Button type="button" variant="outline" onClick={goPrev} className="rounded-full px-5 py-2 text-xs">Back</Button>
+          )}
+        </div>
+        <div className="flex items-center gap-3">
+          {step < 3 && (
+            <Button type="button" onClick={goNext} className="rounded-full px-7 py-4 text-sm font-medium">Next</Button>
+          )}
+          {step === 3 && (
+            <Button type="submit" className="rounded-full px-7 py-4 text-sm font-medium">Confirm booking</Button>
+          )}
+        </div>
       </div>
 
       {status && <p className="text-sm text-primary">{status}</p>}
