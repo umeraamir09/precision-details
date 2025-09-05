@@ -16,7 +16,7 @@ export const tiers: Tier[] = [
   {
     slug: 'silver',
     name: 'Essentials',
-    price: 195,
+    price: 206.25,
     period: 'per car',
     features: [
       'Full exterior wash',
@@ -30,7 +30,7 @@ export const tiers: Tier[] = [
   {
     slug: 'upholstery',
     name: 'Upholstery Interior Deep Clean',
-    price: 120,
+    price: 150,
     period: 'per car',
     features: [
       'Full interior shampoo',
@@ -63,7 +63,6 @@ export const tiers: Tier[] = [
       'Build a personalized package',
       'Pick just the services you need',
       'Instant live pricing',
-      'Includes confirmation email',
     ],
     startingAt: false,
     cta: 'Build Now',
