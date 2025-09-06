@@ -70,7 +70,7 @@ export default function PricingPlans({ initialDiscount = 0 }: { initialDiscount?
           {tier.features.slice(0,5).map(f => (
             <li key={f} className="flex items-start gap-3">
               <span className="mt-1 h-2 w-2 rounded-full bg-primary inline-block" />
-              <span className="text-sm text-neutral-700">{f}</span>
+              <span className="text-sm text-white">{f}</span>
             </li>
           ))}
           {tier.features.length > 5 && (
