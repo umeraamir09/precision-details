@@ -37,7 +37,7 @@ export default function PricingPlans({ initialDiscount = 0 }: { initialDiscount?
       <Reveal
         key={tier.slug}
         delay={(baseIndex + idx) * 0.05}
-        className={`relative flex h-full flex-col rounded-none text-white py-20 p-8 transition min-h-[360px] text-left ${
+        className={`relative flex h-full flex-col rounded-2xl p-8 transition-transform duration-300 ease-out transform-gpu hover:-translate-y-3 hover:scale-[1.02] hover:z-10 text-left min-h-[440px] border border-orange-300/30 shadow-lg hover:shadow-[0_24px_48px_rgba(15,23,42,0.18)] ${
           tier.highlight ? 'ring-1 ring-primary/20' : ''
         } ${comingSoon ? 'grayscale opacity-70' : ''}`}
       >
@@ -47,7 +47,7 @@ export default function PricingPlans({ initialDiscount = 0 }: { initialDiscount?
           </span>
         )}
         {comingSoon && (
-          <span className="absolute -top-3 right-4 rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground shadow border">
+          <span className="absolute -top-3 right-4 rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">
             Coming Soon
           </span>
         )}
@@ -57,31 +57,31 @@ export default function PricingPlans({ initialDiscount = 0 }: { initialDiscount?
           </span>
         )}
 
-        <h3 className="font-heading text-lg text-primary font-bold uppercase tracking-wide">{tier.name}</h3>
+        <h3 className="font-heading text-lg text-white font-bold uppercase tracking-wide">{tier.name}</h3>
 
         <div className="mt-4 flex items-baseline gap-3">
           <span className="text-5xl font-heading text-primary leading-none">{tier.__original ? <><span className="line-through text-muted-foreground text-lg mr-3">${tier.__original}</span> <span>${tier.price}</span></> : <>${tier.price}</>}</span>
           <span className="text-sm text-muted-foreground">/{tier.period}</span>
         </div>
 
-        <div className="mt-4 border-t-2 border-primary/80 w-20" />
+        <div className="mt-4 border-t-2 border-orange-300/80 w-20" />
 
         <ul className="mt-6 space-y-3 text-sm text-muted-foreground flex-1">
           {tier.features.slice(0,5).map(f => (
             <li key={f} className="flex items-start gap-3">
               <span className="mt-1 h-2 w-2 rounded-full bg-primary inline-block" />
-              <span className="text-sm text-white">{f}</span>
+              <span className="text-sm text-neutral-700">{f}</span>
             </li>
           ))}
           {tier.features.length > 5 && (
-            <li className="text-xs italictext-white">+{tier.features.length - 5} more</li>
+            <li className="text-xs italic text-neutral-500">+{tier.features.length - 5} more</li>
           )}
         </ul>
 
         {comingSoon ? (
           <Button disabled variant="secondary" className="mt-8 w-full rounded-full cursor-not-allowed">Coming Soon</Button>
         ) : tier.slug === 'custom' ? (
-            <Link className="text-primary font-semibold uppercase underline" href={`/custom`}>{tier.cta ?? 'Build Now'}</Link>
+          <Link className="text-primary font-semibold uppercase underline" href={`/custom`}>{tier.cta ?? 'Build Now'}</Link>
         ) : (
           <div className="mt-8">
             <Link href={`/booking/${tier.slug}`} className="text-primary font-semibold uppercase underline">{tier.cta ?? 'Join Now'}</Link>
@@ -90,27 +90,6 @@ export default function PricingPlans({ initialDiscount = 0 }: { initialDiscount?
       </Reveal>
     );
   };
-  useEffect(() => {
-    const style = document.createElement("style");
-    style.id = "disable-reveal-animations";
-    style.textContent = `
-      /* Generic rules to neutralize common "reveal" animations */
-      .reveal, .reveal *,
-      [data-reveal], [data-reveal] *,
-      [data-revealed], [data-revealed] *,
-      .is-revealed, .revealed {
-        animation: none !important;
-        transition: none !important;
-        opacity: 1 !important;
-        transform: none !important;
-      }
-    `;
-    document.head.appendChild(style);
-    return () => {
-      const el = document.getElementById("disable-reveal-animations");
-      if (el) el.remove();
-    };
-  }, []);
   return (
     <div className="mt-12">
       <div className="max-w-7xl mx-auto relative px-2 md:px-4">

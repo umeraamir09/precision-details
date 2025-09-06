@@ -66,7 +66,6 @@ export const tiers: Tier[] = [
     ],
     startingAt: false,
     cta: 'Build Now',
-    highlight: true,
   },
 ];
 
