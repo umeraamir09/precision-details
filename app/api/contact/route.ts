@@ -17,6 +17,29 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
+    // Also forward the contact payload to Make.com webhook (non-blocking for success response)
+    const makePayload = {
+      firstName,
+      lastName: lastName || '',
+      email,
+      phone: phone || '',
+      message,
+      source: 'contact-form',
+      submittedAt: new Date().toISOString(),
+    };
+    try {
+      await fetch('https://hook.eu2.make.com/1lnz8hhsc8hm6broeywod2tukj5he3a6', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(makePayload),
+        // Prevent Next.js from caching the webhook call
+        cache: 'no-store',
+      });
+    } catch (webhookErr) {
+      console.error('Make.com webhook error:', webhookErr);
+      // Do not fail the request if webhook forwarding fails
+    }
+
     const logoUrl = process.env.PUBLIC_BRAND_LOGO_URL || 'https://raw.githubusercontent.com/umeraamir09/precision-details/refs/heads/master/public/branding/logo.png';
     const { error } = await resend.emails.send({
       from: 'Precision Details <noreply@umroo.art>',
