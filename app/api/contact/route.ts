@@ -28,7 +28,7 @@ export async function POST(request: Request) {
       submittedAt: new Date().toISOString(),
     };
     try {
-      await fetch('https://hook.eu2.make.com/1lnz8hhsc8hm6broeywod2tukj5he3a6', {
+  await fetch('https://hooks.zapier.com/hooks/catch/24980009/u5wzohj/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(makePayload),
