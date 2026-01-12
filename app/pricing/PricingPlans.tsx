@@ -8,11 +8,13 @@ import { applyPercentDiscount } from '@/lib/utils';
 import { FiCheck, FiArrowRight, FiStar } from "react-icons/fi";
 import { motion } from "framer-motion";
 
-export default function PricingPlans({ initialDiscount = 0 }: { initialDiscount?: number }) {
+export default function PricingPlans({ initialDiscount = 0, initialPrices }: { initialDiscount?: number; initialPrices?: Record<string, number> }) {
   const [discountPct, setDiscountPct] = useState(initialDiscount);
+  const [dynamicPrices, setDynamicPrices] = useState<Record<string, number>>(initialPrices || {});
   
   // Refresh in background to pick up any change after initial server render
   useEffect(() => {
+    // Fetch discount
     fetch('/api/discount')
       .then(r => r.json())
       .then(j => {
@@ -24,6 +26,16 @@ export default function PricingPlans({ initialDiscount = 0 }: { initialDiscount?
         }
       })
       .catch(() => {});
+    
+    // Fetch dynamic prices
+    fetch('/api/pricing')
+      .then(r => r.json())
+      .then(j => {
+        if (j?.prices && typeof j.prices === 'object') {
+          setDynamicPrices(j.prices);
+        }
+      })
+      .catch(() => {});
   }, []);
 
   interface TierWithOrig extends Tier { 
@@ -31,11 +43,13 @@ export default function PricingPlans({ initialDiscount = 0 }: { initialDiscount?
   }
 
   const allTiers: TierWithOrig[] = [...tiers].map((t): TierWithOrig => {
-    if (discountPct > 0 && t.price > 0) {
-      const { discounted } = applyPercentDiscount(t.price, discountPct);
-      return { ...t, price: discounted, __original: t.price };
+    // Use dynamic price if available, otherwise default
+    const basePrice = dynamicPrices[t.slug] ?? t.price;
+    if (discountPct > 0 && basePrice > 0) {
+      const { discounted } = applyPercentDiscount(basePrice, discountPct);
+      return { ...t, price: discounted, __original: basePrice };
     }
-    return t;
+    return { ...t, price: basePrice };
   });
 
   // Order: upholstery, silver (Essentials), custom

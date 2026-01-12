@@ -149,7 +149,7 @@ export default function BookingForm({ slug, onCarTypeChange }: { slug: string; o
     }
     if (Object.keys(errs).length) { setErrors(errs); return; }
     setErrors(null);
-    setStatus('Booking…');
+    setStatus('Processing…');
   // Extract custom features & base price from URL when slug is custom
   const params = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
   const customFeatures = slug === 'custom' ? params.get('features') : null;
@@ -177,10 +177,18 @@ export default function BookingForm({ slug, onCarTypeChange }: { slug: string; o
       customBase: customPrice ? Number(customPrice) : undefined,
       }),
       });
-      const json: { ok?: boolean; error?: string } = await res.json();
+      const json: { ok?: boolean; error?: string; requiresConfirmation?: boolean; message?: string } = await res.json();
       if (!res.ok) throw new Error(json.error || 'Failed to book');
-      setStatus('Booked! Check your email for confirmation.');
-      router.push(`/booking/${slug}?success=1`);
+      
+      if (json.requiresConfirmation) {
+        // New flow: requires email confirmation
+        setStatus(json.message || 'Please check your email to confirm your booking.');
+        router.push(`/booking/${slug}?pending=1`);
+      } else {
+        // Legacy flow (for backward compatibility)
+        setStatus('Booked! Check your email for confirmation.');
+        router.push(`/booking/${slug}?success=1`);
+      }
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Something went wrong.';
       setStatus(msg);
