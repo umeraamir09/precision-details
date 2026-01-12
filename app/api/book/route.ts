@@ -159,9 +159,13 @@ export async function POST(request: Request) {
   }
   
   // Build confirmation URL
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || process.env.VERCEL_URL 
-    ? `https://${process.env.VERCEL_URL}` 
-    : 'http://localhost:3000';
+  let baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
+  if (!baseUrl && process.env.VERCEL_URL) {
+    baseUrl = `https://${process.env.VERCEL_URL}`;
+  }
+  if (!baseUrl) {
+    baseUrl = 'http://localhost:3000';
+  }
   const confirmUrl = `${baseUrl}/booking/confirm/${token}`;
   
   // Send confirmation email

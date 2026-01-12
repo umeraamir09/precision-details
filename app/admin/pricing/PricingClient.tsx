@@ -41,10 +41,7 @@ export default function PricingClient() {
     try {
       const res = await fetch('/api/admin/pricing', {
         method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json', 
-          'x-admin-key': process.env.NEXT_PUBLIC_ADMIN_KEY || '' 
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prices }),
       });
       const json = await res.json();
