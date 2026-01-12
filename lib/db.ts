@@ -60,6 +60,7 @@ export async function ensureSchema() {
   await db`alter table bookings add column if not exists location_address text`;
   await db`alter table bookings add column if not exists custom_features jsonb`;
   await db`alter table bookings add column if not exists custom_base integer`;
+  await db`alter table bookings add column if not exists admin_notes text`;
   // Allow multiple bookings per email/phone (was previously unique)
   // Try dropping as constraint (typical name) and as index fallback
   await db`alter table bookings drop constraint if exists bookings_email_key`;
@@ -94,6 +95,7 @@ export type BookingRow = {
   phone: string | null;
   car_model?: string | null;
   notes: string | null;
+  admin_notes?: string | null;
   date: string;
   time: string;
   status: 'booked' | 'cancelled' | 'updated' | 'completed' | string;

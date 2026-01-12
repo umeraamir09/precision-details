@@ -1,15 +1,19 @@
 import { NextResponse } from 'next/server';
 import { google } from 'googleapis';
-import { Resend } from 'resend';
 import { getTierBySlug } from '@/lib/tiers';
 import { db, ensureSchema } from '@/lib/db';
 import { getGlobalDiscountPercent, applyPercentDiscount } from '@/lib/utils';
 import { describeServiceIds } from '@/lib/services';
 import { BookingEmailToCustomer, BookingEmailToOwner } from '@/app/components/booking-email-template';
+import { 
+  validateBookingSlot, 
+  slotsOverlap, 
+  BOOKING_DURATION_MINUTES,
+  BOOKING_TIMEZONE 
+} from '@/lib/booking-rules';
+import { getResend, EMAIL_FROM, getOwnerEmail, getBrandLogoUrl } from '@/lib/email';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
-function toRFC3339(date: string, time: string, durationMin = 60) {
+function toRFC3339(date: string, time: string, durationMin = BOOKING_DURATION_MINUTES) {
   const [y, m, d] = date.split('-').map(Number);
   const [hh, mm] = time.split(':').map(Number);
   const toStr = (n: number) => String(n).padStart(2, '0');
@@ -119,46 +123,31 @@ export async function POST(request: Request) {
     }
   }
 
-    
-    // Weekday vs weekend logic
-    const [yy, mm, dd] = date.split('-').map(Number);
-    const dow = new Date(yy, (mm || 1) - 1, dd || 1).getDay(); // 0 Sun, 6 Sat
-    const isWeekend = dow === 0 || dow === 6;
-    const SLOT_MIN = isWeekend ? 240 : 60; // 4h on weekends, 1h placeholder on weekdays
+  // Validate booking slot against business rules
+  const slotValidation = validateBookingSlot(date, time);
+  if (!slotValidation.valid) {
+    return NextResponse.json({ error: slotValidation.reason }, { status: 400 });
+  }
 
-    try {
-      if (!isWeekend) {
-        // For weekdays keep one booking per day
-        const existingSameDay = await db`
-          select id from bookings where date = ${date} and (status != 'cancelled') limit 1
-        ` as unknown as Array<{ id: number }>;
-        if (existingSameDay && existingSameDay.length > 0) {
-          return NextResponse.json({ error: 'This date is no longer available. Please choose another day.' }, { status: 409 });
-        }
-      } else {
-        // On weekends, ensure no 4-hour overlap with existing bookings
-        const rows = await db`
-          select time from bookings where date = ${date} and status != 'cancelled'
-        ` as unknown as Array<{ time: string }>;
-        const toMin = (hhmm: string) => {
-          const [h, m] = hhmm.split(':').map(Number); return h * 60 + m;
-        };
-        const candidateStart = toMin(time);
-        const candidateEnd = candidateStart + SLOT_MIN;
-        for (const r of rows) {
-          if (!r?.time) continue;
-          const s = toMin(typeof r.time === 'string' ? r.time : String(r.time));
-          const e = s + SLOT_MIN;
-          const overlap = candidateStart < e && s < candidateEnd;
-          if (overlap) {
-            return NextResponse.json({ error: 'Selected time overlaps an existing weekend booking. Please pick another slot.' }, { status: 409 });
-          }
-        }
+  // Check for overlapping bookings in the database
+  try {
+    const rows = await db`
+      select time from bookings where date = ${date} and status != 'cancelled'
+    ` as unknown as Array<{ time: string }>;
+    
+    for (const r of rows) {
+      if (!r?.time) continue;
+      const existingTime = typeof r.time === 'string' ? r.time : String(r.time);
+      if (slotsOverlap(time, existingTime)) {
+        return NextResponse.json({ 
+          error: 'This time slot conflicts with an existing booking. Please choose another time.' 
+        }, { status: 409 });
       }
-    } catch (e) {
-      // If DB check fails (local dev without DB), continue but rely on calendar conflict or UI.
-      console.warn('DB availability check failed or DB not configured', e);
     }
+  } catch (e) {
+    // If DB check fails (local dev without DB), continue but rely on calendar conflict or UI.
+    console.warn('DB availability check failed or DB not configured', e);
+  }
 
     
     const clientEmail = process.env.GCAL_CLIENT_EMAIL;
@@ -176,8 +165,8 @@ export async function POST(request: Request) {
     });
 
     const calendar = google.calendar({ version: 'v3', auth: jwt });
-  const { start, end } = toRFC3339(date, time, SLOT_MIN);
-  const timeZone = process.env.GCAL_TIMEZONE || 'America/Chicago';
+  const { start, end } = toRFC3339(date, time, BOOKING_DURATION_MINUTES);
+  const timeZone = BOOKING_TIMEZONE;
 
   const event = await calendar.events.insert({
       calendarId,
@@ -190,18 +179,19 @@ export async function POST(request: Request) {
       sendUpdates: 'all',
     });
 
-  const logoUrl = process.env.PUBLIC_BRAND_LOGO_URL || 'https://raw.githubusercontent.com/umeraamir09/precision-details/refs/heads/master/public/branding/logo.png';
+  const logoUrl = getBrandLogoUrl();
     const time12 = to12h(time);
-    const ownerEmail = process.env.CONTACT_TO?.split(',')?.[0] || 'detailswithprecision@gmail.com';
+    const ownerEmail = getOwnerEmail();
+    const resend = getResend();
   await resend.emails.send({
-      from: 'Precision Details <noreply@umroo.art>',
+      from: EMAIL_FROM,
       to: [ownerEmail],
       subject: `New booking: ${tier.name} on ${date} at ${time12}`,
   react: BookingEmailToOwner({ name, email, phone, notes, carModel: carModel || undefined, seatType: seatType || undefined, carType: normCarType, packageName: tier.name, price: tier.price, originalPrice: originalBase, discountPercent: discountPct>0 ? discountPct : undefined, date, time: time12, logoUrl, locationType, locationAddress: locationType === 'my' ? locationAddress || null : null, customFeatures: slug === 'custom' ? customLines : undefined }),
     });
 
     await resend.emails.send({
-      from: 'Precision Details <noreply@umroo.art>',
+      from: EMAIL_FROM,
       to: [email],
       subject: 'Your booking was received',
   react: BookingEmailToCustomer({ name, packageName: tier.name, price: tier.price, originalPrice: originalBase, discountPercent: discountPct>0 ? discountPct : undefined, date, time: time12, logoUrl, carModel: carModel || undefined, seatType: seatType || undefined, carType: normCarType, locationType, locationAddress: locationType === 'my' ? locationAddress || null : null, customFeatures: slug === 'custom' ? customLines : undefined }),

@@ -4,23 +4,17 @@ import { applyPercentDiscount } from '@/lib/utils';
 import { Button } from '@/app/components/shadcn/button';
 import { useRouter } from 'next/navigation';
 import Calendar, { type CalendarProps } from '@/app/components/shadcn/calendar';
+import {
+  isWeekend,
+  getAvailableSlots,
+  formatTime12h,
+  slotsOverlap,
+  BOOKING_DURATION_MINUTES,
+  timeToMinutes,
+} from '@/lib/booking-rules';
 
-// Reuse logic similar to BookingForm for calendar/slots
 function pad(n: number) { return n.toString().padStart(2, '0'); }
-const weekDayHours = { start: { h: 15, m: 30 }, end: { h: 20, m: 0 } };
-const weekendHours = { start: { h: 9, m: 0 }, end: { h: 20, m: 0 } };
-const SLOT_MINUTES = 30;
-const WEEKEND_BLOCK_MINUTES = 240; // 4 hours per booking
-function isWeekend(date: Date) { const d = date.getDay(); return d === 0 || d === 6; }
-function getSlotsForDate(date: Date) {
-  const hours = isWeekend(date) ? weekendHours : weekDayHours;
-  const start = new Date(date); start.setHours(hours.start.h, hours.start.m, 0, 0);
-  const end = new Date(date); end.setHours(hours.end.h, hours.end.m, 0, 0);
-  const slots: string[] = []; const cur = new Date(start);
-  while (cur < end) { slots.push(`${pad(cur.getHours())}:${pad(cur.getMinutes())}`); cur.setMinutes(cur.getMinutes() + SLOT_MINUTES); }
-  return slots;
-}
-function format12h(hhmm: string) { const [HH, MM] = hhmm.split(":"); let h = Number(HH); const ampm = h >= 12 ? 'PM' : 'AM'; h = h % 12; if (h === 0) h = 12; return `${h}:${MM} ${ampm}`; }
+
 function isSlotPast(selectedDate: Date, hhmm: string) {
   const now = new Date();
   if (selectedDate.toDateString() !== now.toDateString()) return false;
@@ -51,7 +45,7 @@ export default function CustomBuilder() {
   const [date, setDate] = useState<Date | undefined>();
   const [time, setTime] = useState<string | undefined>();
   const [bookedDates, setBookedDates] = useState<string[]>([]);
-  const [existingWeekendStarts, setExistingWeekendStarts] = useState<string[]>([]);
+  const [existingBookingTimes, setExistingBookingTimes] = useState<string[]>([]);
   const fromDate = useMemo(() => { const d = new Date(); d.setHours(0,0,0,0); return d; }, []);
   const toDate = useMemo(() => { const now = new Date(); const d = new Date(now.getFullYear(), now.getMonth(), 1); d.setMonth(d.getMonth() + 2); d.setDate(0); d.setHours(23,59,59,999); return d; }, []);
   const disabledRules = useMemo<NonNullable<CalendarProps['disabled']>>(() => {
@@ -63,7 +57,7 @@ export default function CustomBuilder() {
     return rules;
   }, [fromDate, toDate, bookedDates]);
   const footer = useMemo(() => !date ? <p className="text-sm text-muted-foreground">Pick a date to see times.</p> : <p className="text-sm text-muted-foreground">Selected: {date.toDateString()}</p>, [date]);
-  const slots = useMemo(() => (date ? getSlotsForDate(date) : []), [date]);
+  const slots = useMemo(() => (date ? getAvailableSlots(date) : []), [date]);
   const fromMonth = useMemo(() => { const now = new Date(); return new Date(now.getFullYear(), now.getMonth(), 1); }, []);
 
   // Fetch availability like BookingForm
@@ -77,13 +71,15 @@ export default function CustomBuilder() {
       .catch(()=>{});
     return () => controller.abort();
   }, [fromDate, toDate]);
+  
+  // Fetch existing booking times for selected date
   useEffect(() => {
-    if (!date || !isWeekend(date)) { setExistingWeekendStarts([]); return; }
+    if (!date) { setExistingBookingTimes([]); return; }
     const controller = new AbortController();
     const d = `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())}`;
     fetch(`/api/bookings/availability?date=${d}`, { signal: controller.signal })
       .then(r=>r.json())
-      .then((json: { existing?: string[] }) => { if (Array.isArray(json?.existing)) setExistingWeekendStarts(json.existing); })
+      .then((json: { existing?: string[] }) => { if (Array.isArray(json?.existing)) setExistingBookingTimes(json.existing); })
       .catch(()=>{});
     return () => controller.abort();
   }, [date]);
@@ -270,19 +266,34 @@ export default function CustomBuilder() {
                   <span className="text-xs text-muted-foreground uppercase tracking-wide">Choose Time</span>
                   <span className="text-[10px] text-muted-foreground">{date ? date.toLocaleDateString() : 'Select date'}</span>
                 </div>
+                <div className="text-[10px] text-muted-foreground">
+                  Each appointment: {Math.floor(BOOKING_DURATION_MINUTES / 60)}h {BOOKING_DURATION_MINUTES % 60}m
+                </div>
                 <div className="grid grid-cols-2 gap-2">
                   {slots.length === 0 && <p className="col-span-full text-[11px] text-muted-foreground">Select date first.</p>}
                   {slots.map(s => {
-                    const weekend = date ? isWeekend(date) : false;
-                    let weekendOverlap = false;
-                    if (weekend) {
-                      const [h,m] = s.split(':').map(Number); const startMin = h*60+m;
-                      for (const ex of existingWeekendStarts) { const [eh,em]=ex.split(':').map(Number); const es=eh*60+em; const ee=es+WEEKEND_BLOCK_MINUTES; const cs=startMin; const ce=cs+WEEKEND_BLOCK_MINUTES; if (cs<ee && es<ce) { weekendOverlap = true; break; } }
+                    let hasConflict = false;
+                    for (const existing of existingBookingTimes) {
+                      if (slotsOverlap(s, existing)) {
+                        hasConflict = true;
+                        break;
+                      }
                     }
-                    const disabled = !date || isSlotPast(date, s) || weekendOverlap;
+                    const isPast = date ? isSlotPast(date, s) : false;
+                    const disabled = !date || isPast || hasConflict;
                     const selectedSlot = time === s;
                     return (
-                      <button key={s} type="button" disabled={disabled} onClick={()=>!disabled && setTime(s)} className={`rounded-md border px-2 py-1.5 text-[11px] transition ${disabled ? 'border-white/5 bg-background/30 text-muted-foreground/40 cursor-not-allowed' : selectedSlot ? 'border-primary/50 bg-primary/20 text-primary ring-2 ring-primary/30' : 'border-white/10 bg-background/60 text-white hover:border-white/20'}`}>{format12h(s)}</button>
+                      <button 
+                        key={s} 
+                        type="button" 
+                        disabled={disabled} 
+                        onClick={()=>!disabled && setTime(s)} 
+                        className={`rounded-md border px-2 py-1.5 text-[11px] transition ${disabled ? 'border-white/5 bg-background/30 text-muted-foreground/40 cursor-not-allowed' : selectedSlot ? 'border-primary/50 bg-primary/20 text-primary ring-2 ring-primary/30' : 'border-white/10 bg-background/60 text-white hover:border-white/20'}`}
+                        title={hasConflict ? 'Already booked' : isPast ? 'Past time' : formatTime12h(s)}
+                      >
+                        {formatTime12h(s)}
+                        {hasConflict && <span className="block text-[9px] text-red-400">Booked</span>}
+                      </button>
                     );
                   })}
                 </div>

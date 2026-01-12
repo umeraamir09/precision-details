@@ -85,9 +85,9 @@ export async function PATCH(req: NextRequest) {
   await ensureSchema();
   try {
     const body = await req.json();
-  const { id, updates } = body as { id: number; updates: Partial<{ date: string; time: string; status: string; notes: string; car_model: string; seat_type: string | null }>; };
+  const { id, updates } = body as { id: number; updates: Partial<{ date: string; time: string; status: string; notes: string; admin_notes: string; car_model: string; seat_type: string | null }>; };
     if (!id || !updates) return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
-  const keys = Object.keys(updates) as Array<'date' | 'time' | 'status' | 'notes' | 'car_model' | 'seat_type'>;
+  const keys = Object.keys(updates) as Array<'date' | 'time' | 'status' | 'notes' | 'admin_notes' | 'car_model' | 'seat_type'>;
     if (keys.length === 0) return NextResponse.json({ error: 'No updates provided' }, { status: 400 });
 
     if (updates.date && !/^\d{4}-\d{2}-\d{2}$/.test(updates.date)) {
@@ -110,6 +110,7 @@ export async function PATCH(req: NextRequest) {
         date   = coalesce(${updates.date ?? null}, date),
         time   = coalesce(${updates.time ?? null}, time),
     notes  = coalesce(${updates.notes ?? null}, notes),
+    admin_notes = coalesce(${'admin_notes' in updates ? (updates.admin_notes ?? null) : null}, admin_notes),
   car_model = coalesce(${'car_model' in updates ? (updates.car_model ?? null) : null}, car_model),
   seat_type = coalesce(${'seat_type' in updates ? (updates.seat_type ?? null) : null}, seat_type),
         status = coalesce(${statusParam}, status),

@@ -1,10 +1,7 @@
 import { NextResponse } from 'next/server';
-import { Resend } from 'resend';
+import { getResend, EMAIL_FROM, getBrandLogoUrl } from '@/lib/email';
 import { EmailTemplate } from '@/app/components/email-template';
 import { ConfirmationTemplate } from '@/app/components/confirmation-template';
-
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 
 export async function POST(request: Request) {
   try {
@@ -17,9 +14,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    const logoUrl = process.env.PUBLIC_BRAND_LOGO_URL || 'https://raw.githubusercontent.com/umeraamir09/precision-details/refs/heads/master/public/branding/logo.png';
+    const resend = getResend();
+    const logoUrl = getBrandLogoUrl();
     const { error } = await resend.emails.send({
-      from: 'Precision Details <noreply@umroo.art>',
+      from: EMAIL_FROM,
       to: process.env.CONTACT_TO?.split(',') || ['detailswithprecision@gmail.com'],
       subject: 'New Contact Form Submission',
       react: EmailTemplate({ firstName, lastName, email, phone, message, logoUrl }),
@@ -30,7 +28,7 @@ export async function POST(request: Request) {
     }
 
     await resend.emails.send({
-      from: 'Precision Details <noreply@umroo.art>',
+      from: EMAIL_FROM,
       to: [email],
       subject: 'We received your message!',
       react: ConfirmationTemplate({ firstName, logoUrl }),

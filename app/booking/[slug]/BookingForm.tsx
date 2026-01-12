@@ -5,43 +5,16 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/app/components/shadcn/button';
 import Calendar, { type CalendarProps } from '@/app/components/shadcn/calendar';
 import { getTierBySlug } from '@/lib/tiers';
+import {
+  isWeekend,
+  getAvailableSlots,
+  formatTime12h,
+  slotsOverlap,
+  BOOKING_DURATION_MINUTES,
+  timeToMinutes,
+} from '@/lib/booking-rules';
 
 function pad(n: number) { return n.toString().padStart(2, '0'); }
-
-const weekDayHours = { start: { h: 15, m: 30 }, end: { h: 20, m: 0 } };
-const weekendHours = { start: { h: 9, m: 0 }, end: { h: 20, m: 0 } };
-const SLOT_MINUTES = 30;
-const WEEKEND_BLOCK_MINUTES = 240; // 4 hours per booking
-
-function isWeekend(date: Date) {
-  const d = date.getDay();
-  return d === 0 || d === 6;
-}
-
-function getSlotsForDate(date: Date) {
-  const hours = isWeekend(date) ? weekendHours : weekDayHours;
-  const start = new Date(date);
-  start.setHours(hours.start.h, hours.start.m, 0, 0);
-  const end = new Date(date);
-  end.setHours(hours.end.h, hours.end.m, 0, 0);
-
-  const slots: string[] = [];
-  const cur = new Date(start);
-  while (cur < end) {
-    slots.push(`${pad(cur.getHours())}:${pad(cur.getMinutes())}`);
-    cur.setMinutes(cur.getMinutes() + SLOT_MINUTES);
-  }
-  return slots;
-}
-
-function format12h(hhmm: string) {
-  const [HH, MM] = hhmm.split(":");
-  let h = Number(HH);
-  const ampm = h >= 12 ? 'PM' : 'AM';
-  h = h % 12;
-  if (h === 0) h = 12;
-  return `${h}:${MM} ${ampm}`;
-}
 
 function isSlotPast(selectedDate: Date, hhmm: string) {
   const now = new Date();
@@ -69,7 +42,7 @@ export default function BookingForm({ slug, onCarTypeChange }: { slug: string; o
   const [status, setStatus] = useState<string | null>(null);
   const [errors, setErrors] = useState<{ email?: string; phone?: string } | null>(null);
   const [bookedDates, setBookedDates] = useState<string[]>([]);
-  const [existingWeekendStarts, setExistingWeekendStarts] = useState<string[]>([]);
+  const [existingBookingTimes, setExistingBookingTimes] = useState<string[]>([]);
   const [step, setStep] = useState<0 | 1 | 2 | 3>(0);
   const [maxStep, setMaxStep] = useState<0 | 1 | 2 | 3>(0); // highest unlocked step
 
@@ -108,7 +81,7 @@ export default function BookingForm({ slug, onCarTypeChange }: { slug: string; o
     return <p className="text-sm text-muted-foreground">Selected: {date.toDateString()}</p>;
   }, [date]);
 
-  const slots = useMemo(() => (date ? getSlotsForDate(date) : []), [date]);
+  const slots = useMemo(() => (date ? getAvailableSlots(date) : []), [date]);
   const fromMonth = useMemo(() => {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
@@ -142,18 +115,17 @@ export default function BookingForm({ slug, onCarTypeChange }: { slug: string; o
     onCarTypeChange?.(form.carType);
   }, [form.carType, onCarTypeChange]);
 
-  // When a weekend date is selected, fetch existing weekend start times
+  // Fetch existing booking times for the selected date
   useEffect(() => {
-    if (!date) { setExistingWeekendStarts([]); return; }
-    if (!isWeekend(date)) { setExistingWeekendStarts([]); return; }
+    if (!date) { setExistingBookingTimes([]); return; }
     const controller = new AbortController();
-    const pad = (n: number) => String(n).padStart(2, '0');
-    const d = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+    const padNum = (n: number) => String(n).padStart(2, '0');
+    const d = `${date.getFullYear()}-${padNum(date.getMonth() + 1)}-${padNum(date.getDate())}`;
     fetch(`/api/bookings/availability?date=${d}`, { signal: controller.signal })
       .then(r => r.json())
-      .then((json: { ok?: boolean; type?: 'weekday'|'weekend'; existing?: string[] }) => {
-        if (Array.isArray(json?.existing)) setExistingWeekendStarts(json.existing);
-        else setExistingWeekendStarts([]);
+      .then((json: { ok?: boolean; existing?: string[] }) => {
+        if (Array.isArray(json?.existing)) setExistingBookingTimes(json.existing);
+        else setExistingBookingTimes([]);
       })
       .catch(() => {});
     return () => controller.abort();
@@ -441,36 +413,44 @@ export default function BookingForm({ slug, onCarTypeChange }: { slug: string; o
           )}
         </div>
         <div className="h-px w-full bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+        
+        {/* Booking duration info */}
+        <div className="text-xs text-muted-foreground bg-background/40 rounded-lg px-3 py-2">
+          <span className="text-white/80 font-medium">Each appointment: </span>
+          {Math.floor(BOOKING_DURATION_MINUTES / 60)}h {BOOKING_DURATION_MINUTES % 60}m
+        </div>
 
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
           {slots.length === 0 && (
-            <p className="col-span-full text-sm text-muted-foreground">No times — select a date.</p>
+            <p className="col-span-full text-sm text-muted-foreground">No times available — select a date.</p>
           )}
           {slots.map((s) => {
-            const isWknd = isWeekend(date ?? new Date());
-            // Disable if slot would overlap any existing 4h block (no artificial closing-time cutoff)
-            let weekendOverlap = false;
-            if (isWknd) {
-              const [h, m] = s.split(':').map(Number);
-              const startMin = h * 60 + m;
-              for (const ex of existingWeekendStarts) {
-                const [eh, em] = ex.split(':').map(Number);
-                const es = eh * 60 + em;
-                const ee = es + WEEKEND_BLOCK_MINUTES;
-                const cs = startMin;
-                const ce = cs + WEEKEND_BLOCK_MINUTES;
-                if (cs < ee && es < ce) { weekendOverlap = true; break; }
+            // Check if slot conflicts with existing booking
+            let hasConflict = false;
+            for (const existing of existingBookingTimes) {
+              if (slotsOverlap(s, existing)) {
+                hasConflict = true;
+                break;
               }
             }
-            const disabledSlot = date ? (isSlotPast(date, s) || weekendOverlap) : false;
+            const isPast = date ? isSlotPast(date, s) : false;
+            const disabledSlot = isPast || hasConflict;
             const isSelected = time === s;
+            
+            // Calculate end time for display
+            const slotMins = timeToMinutes(s);
+            const endMins = slotMins + BOOKING_DURATION_MINUTES;
+            const endH = Math.floor(endMins / 60);
+            const endM = endMins % 60;
+            const endTimeStr = `${endH.toString().padStart(2, '0')}:${endM.toString().padStart(2, '0')}`;
+            
             return (
               <button
                 key={s}
                 type="button"
                 disabled={disabledSlot}
                 onClick={() => !disabledSlot && setTime(s)}
-                className={`group relative inline-flex items-center justify-center gap-2 rounded-lg border text-sm transition-all ${
+                className={`group relative inline-flex flex-col items-center justify-center gap-0.5 rounded-lg border text-sm transition-all ${
                   disabledSlot
                     ? 'border-white/5 bg-background/30 text-muted-foreground opacity-50 cursor-not-allowed'
                     : isSelected
@@ -478,8 +458,11 @@ export default function BookingForm({ slug, onCarTypeChange }: { slug: string; o
                       : 'border-white/10 bg-background/50 text-white hover:border-white/20 hover:bg-background/70'
                 } px-3 py-2`}
                 aria-disabled={disabledSlot}
+                title={disabledSlot ? (isPast ? 'Past time' : 'Already booked') : `${formatTime12h(s)} - ${formatTime12h(endTimeStr)}`}
               >
-                {format12h(s)}
+                <span>{formatTime12h(s)}</span>
+                {hasConflict && <span className="text-[10px] text-red-400">Booked</span>}
+                {isPast && !hasConflict && <span className="text-[10px] text-muted-foreground">Past</span>}
               </button>
             );
           })}
@@ -521,7 +504,7 @@ export default function BookingForm({ slug, onCarTypeChange }: { slug: string; o
                 <h4 className="text-white/80 font-medium">Schedule</h4>
                 <button type="button" onClick={()=>jumpTo(date?2:1)} className="text-[11px] text-primary hover:underline">Change</button>
               </div>
-              <p className="text-muted-foreground leading-relaxed">{date ? date.toDateString() : '—'}{time?` at ${format12h(time)}`:''}</p>
+              <p className="text-muted-foreground leading-relaxed">{date ? date.toDateString() : '—'}{time?` at ${formatTime12h(time)}`:''}</p>
             </div>
             {form.notes && (
               <div className="grid gap-2">
