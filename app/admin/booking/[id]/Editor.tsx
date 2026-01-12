@@ -13,6 +13,7 @@ type Booking = {
   car_model?: string | null;
   seat_type?: 'leather' | 'cloth' | string | null;
   notes: string | null;
+  admin_notes?: string | null;
   date: string;
   time: string;
   status: string;
@@ -27,14 +28,21 @@ export default function BookingEditor({ initial }: { initial: Booking }) {
   const [carModel, setCarModel] = useState(initial.car_model || '');
   const [seatType, setSeatType] = useState((initial.seat_type as string) || '');
   const [notes, setNotes] = useState(initial.notes || '');
+  const [adminNotes, setAdminNotes] = useState(initial.admin_notes || '');
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
   const changed = useMemo(() => (
-    date !== initial.date || time !== initial.time || status !== initial.status || (notes || '') !== (initial.notes || '') || (carModel || '') !== (initial.car_model || '') || (seatType || '') !== (initial.seat_type || '')
-  ), [date, time, status, notes, carModel, seatType, initial]);
+    date !== initial.date || 
+    time !== initial.time || 
+    status !== initial.status || 
+    (notes || '') !== (initial.notes || '') || 
+    (adminNotes || '') !== (initial.admin_notes || '') ||
+    (carModel || '') !== (initial.car_model || '') || 
+    (seatType || '') !== (initial.seat_type || '')
+  ), [date, time, status, notes, adminNotes, carModel, seatType, initial]);
 
-  type BookingUpdate = Pick<Booking,'date'|'time'|'status'|'notes'> & { car_model?: string; seat_type?: string | null };
+  type BookingUpdate = Pick<Booking,'date'|'time'|'status'|'notes'> & { admin_notes?: string; car_model?: string; seat_type?: string | null };
 
   async function save() {
     setBusy(true); setMsg(null);
@@ -44,6 +52,7 @@ export default function BookingEditor({ initial }: { initial: Booking }) {
       if (time !== initial.time) updates.time = time;
       if (status !== initial.status) updates.status = status;
       if ((notes || '') !== (initial.notes || '')) updates.notes = notes;
+      if ((adminNotes || '') !== (initial.admin_notes || '')) updates.admin_notes = adminNotes;
       if ((carModel || '') !== (initial.car_model || '')) updates.car_model = carModel;
   if ((seatType || '') !== (initial.seat_type || '')) updates.seat_type = seatType || null;
       if (Object.keys(updates).length === 0) { setMsg('No changes'); return; }
@@ -107,50 +116,89 @@ export default function BookingEditor({ initial }: { initial: Booking }) {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
-          <label className="text-xs text-muted-foreground">Date</label>
-          <input type="date" value={date} onChange={(e)=>setDate(e.target.value)} className="mt-1 w-full rounded border border-white/10 bg-background/60 px-3 py-2 text-sm text-white" />
-        </div>
-        <div>
-          <label className="text-xs text-muted-foreground">Time</label>
-          <input type="time" step={60} value={time} onChange={(e)=>setTime(e.target.value)} className="mt-1 w-full rounded border border-white/10 bg-background/60 px-3 py-2 text-sm text-white" />
-        </div>
-        <div>
-          <label className="text-xs text-muted-foreground">Status</label>
-          <select value={status} onChange={(e)=>setStatus(e.target.value)} className="mt-1 w-full rounded border border-white/10 bg-background/60 px-3 py-2 text-sm text-white">
-            <option value="booked">booked</option>
-            <option value="updated">updated</option>
-            <option value="cancelled">cancelled</option>
-            <option value="completed">completed</option>
-          </select>
-        </div>
-      </div>
+    <div className="space-y-6">
+      {/* Schedule Section */}
       <div>
-        <label className="text-xs text-muted-foreground">Car model</label>
-        <input value={carModel} onChange={(e)=>setCarModel(e.target.value)} className="mt-1 w-full rounded border border-white/10 bg-background/60 px-3 py-2 text-sm text-white" />
+        <h3 className="text-sm font-medium text-white mb-3">Schedule</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div>
+            <label className="text-xs text-muted-foreground">Date</label>
+            <input type="date" value={date} onChange={(e)=>setDate(e.target.value)} className="mt-1 w-full rounded-lg border border-white/10 bg-background/60 px-3 py-2 text-sm text-white outline-none focus:border-primary/40" />
+          </div>
+          <div>
+            <label className="text-xs text-muted-foreground">Time</label>
+            <input type="time" step={60} value={time} onChange={(e)=>setTime(e.target.value)} className="mt-1 w-full rounded-lg border border-white/10 bg-background/60 px-3 py-2 text-sm text-white outline-none focus:border-primary/40" />
+          </div>
+          <div>
+            <label className="text-xs text-muted-foreground">Status</label>
+            <select value={status} onChange={(e)=>setStatus(e.target.value)} className="mt-1 w-full rounded-lg border border-white/10 bg-background/60 px-3 py-2 text-sm text-white outline-none focus:border-primary/40">
+              <option value="booked">Booked</option>
+              <option value="updated">Updated</option>
+              <option value="cancelled">Cancelled</option>
+              <option value="completed">Completed</option>
+            </select>
+          </div>
+        </div>
       </div>
+
+      {/* Vehicle Section */}
       <div>
-        <label className="text-xs text-muted-foreground">Seat type</label>
-        <select value={seatType} onChange={(e)=>setSeatType(e.target.value)} className="mt-1 w-full rounded border border-white/10 bg-background/60 px-3 py-2 text-sm text-white">
-          <option value="">—</option>
-          <option value="leather">Leather</option>
-          <option value="cloth">Cloth</option>
-        </select>
+        <h3 className="text-sm font-medium text-white mb-3">Vehicle Details</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="text-xs text-muted-foreground">Car Model</label>
+            <input value={carModel} onChange={(e)=>setCarModel(e.target.value)} placeholder="e.g. Toyota Camry 2020" className="mt-1 w-full rounded-lg border border-white/10 bg-background/60 px-3 py-2 text-sm text-white outline-none focus:border-primary/40" />
+          </div>
+          <div>
+            <label className="text-xs text-muted-foreground">Seat Type</label>
+            <select value={seatType} onChange={(e)=>setSeatType(e.target.value)} className="mt-1 w-full rounded-lg border border-white/10 bg-background/60 px-3 py-2 text-sm text-white outline-none focus:border-primary/40">
+              <option value="">Not specified</option>
+              <option value="leather">Leather</option>
+              <option value="cloth">Cloth</option>
+            </select>
+          </div>
+        </div>
       </div>
+
+      {/* Notes Section */}
       <div>
-        <label className="text-xs text-muted-foreground">Notes</label>
-        <textarea rows={4} value={notes} onChange={(e)=>setNotes(e.target.value)} className="mt-1 w-full rounded border border-white/10 bg-background/60 px-3 py-2 text-sm text-white" />
+        <h3 className="text-sm font-medium text-white mb-3">Notes</h3>
+        <div className="space-y-4">
+          <div>
+            <label className="text-xs text-muted-foreground">Customer Notes (visible to customer)</label>
+            <textarea rows={3} value={notes} onChange={(e)=>setNotes(e.target.value)} placeholder="Notes from or for the customer..." className="mt-1 w-full rounded-lg border border-white/10 bg-background/60 px-3 py-2 text-sm text-white outline-none focus:border-primary/40" />
+          </div>
+          <div>
+            <label className="text-xs text-muted-foreground flex items-center gap-2">
+              Admin Notes (internal only)
+              <span className="text-[10px] text-yellow-400/70 bg-yellow-400/10 px-1.5 py-0.5 rounded">Staff only</span>
+            </label>
+            <textarea rows={3} value={adminNotes} onChange={(e)=>setAdminNotes(e.target.value)} placeholder="Internal notes about this booking..." className="mt-1 w-full rounded-lg border border-yellow-400/20 bg-yellow-400/5 px-3 py-2 text-sm text-white outline-none focus:border-yellow-400/40" />
+          </div>
+        </div>
       </div>
-      <div className="flex flex-wrap gap-2 items-center">
-        <Button onClick={save} disabled={busy || !changed}>Save changes</Button>
-        <Button variant="secondary" onClick={markCompleted} disabled={busy || status==='completed'}>Mark Completed</Button>
-        <Button variant="secondary" onClick={resendConfirmation} disabled={busy}>Resend confirmation</Button>
-        <Button variant="destructive" onClick={cancelBooking} disabled={busy}>Cancel booking</Button>
-        {busy && <span className="text-xs text-muted-foreground">Working…</span>}
-        {msg && <span className="text-xs text-primary">{msg}</span>}
+
+      {/* Actions */}
+      <div className="flex flex-wrap gap-2 items-center pt-4 border-t border-white/10">
+        <Button onClick={save} disabled={busy || !changed}>
+          {busy ? 'Saving...' : 'Save Changes'}
+        </Button>
+        <Button variant="secondary" onClick={markCompleted} disabled={busy || status==='completed'}>
+          Mark Completed
+        </Button>
+        <Button variant="secondary" onClick={resendConfirmation} disabled={busy}>
+          Resend Email
+        </Button>
+        <Button variant="destructive" onClick={cancelBooking} disabled={busy}>
+          Cancel Booking
+        </Button>
       </div>
+      
+      {msg && (
+        <div className={`text-sm ${msg.includes('Failed') || msg.includes('error') ? 'text-red-400' : 'text-green-400'}`}>
+          {msg}
+        </div>
+      )}
     </div>
   );
 }

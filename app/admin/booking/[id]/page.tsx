@@ -125,12 +125,25 @@ export default async function AdminBookingDetailPage({ params }: { params: Promi
             </section>
 
             {/* Notes */}
-            {booking.notes && (
+            {(booking.notes || booking.admin_notes) && (
               <section className="rounded-xl border border-white/10 bg-card/70 backdrop-blur-xl p-5">
                 <h2 className="text-white font-semibold mb-4 flex items-center gap-2">
                   <span>📝</span> Notes
                 </h2>
-                <p className="text-sm text-muted-foreground whitespace-pre-wrap">{booking.notes}</p>
+                {booking.notes && (
+                  <div className="mb-4">
+                    <p className="text-xs text-muted-foreground mb-1">Customer Notes</p>
+                    <p className="text-sm text-white whitespace-pre-wrap">{booking.notes}</p>
+                  </div>
+                )}
+                {booking.admin_notes && (
+                  <div className="p-3 rounded-lg bg-yellow-400/5 border border-yellow-400/20">
+                    <p className="text-xs text-yellow-400 mb-1 flex items-center gap-1">
+                      <span>🔒</span> Admin Notes (Internal)
+                    </p>
+                    <p className="text-sm text-white whitespace-pre-wrap">{booking.admin_notes}</p>
+                  </div>
+                )}
               </section>
             )}
 
