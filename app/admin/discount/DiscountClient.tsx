@@ -139,7 +139,7 @@ export default function DiscountClient() {
           <div className="mb-6 p-4 rounded-lg bg-primary/10 border border-primary/20">
             <p className="text-sm text-primary font-medium">Preview</p>
             <p className="text-xs text-muted-foreground mt-1">
-              A $100 package will be displayed as <span className="text-white">${100 - percent}</span>
+              A $100 package will be displayed as <span className="text-white">${Math.round(100 * (1 - percent / 100))}</span>
             </p>
           </div>
         )}

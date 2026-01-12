@@ -4,6 +4,7 @@ import type { BookingRow } from '@/lib/db';
 import { headers } from 'next/headers';
 import { SERVICE_OPTION_MAP } from '@/lib/services';
 import { BOOKING_DURATION_MINUTES, formatTime12h, timeToMinutes, minutesToTime } from '@/lib/booking-rules';
+import { BUSINESS_INFO, getFullAddress } from '@/lib/config';
 
 async function getBooking(id: number, baseUrl: string, adminKey?: string) {
   const res = await fetch(`${baseUrl}/api/bookings?id=${id}`, {
@@ -109,11 +110,11 @@ export default async function AdminBookingDetailPage({ params }: { params: Promi
               </h2>
               {booking.location_type === 'shop' || !booking.location_type ? (
                 <div className="text-sm">
-                  <div className="text-white font-medium">Precision Details Shop</div>
+                  <div className="text-white font-medium">{BUSINESS_INFO.name} Shop</div>
                   <div className="text-muted-foreground mt-1">
-                    Glen Ellyn, IL 1137 Heather Lane<br />
-                    +1 331 307 8784<br />
-                    contact@precisiondetails.co
+                    {getFullAddress()}<br />
+                    {BUSINESS_INFO.phone}<br />
+                    {BUSINESS_INFO.email}
                   </div>
                 </div>
               ) : (

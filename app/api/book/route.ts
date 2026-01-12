@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { google } from 'googleapis';
-import { Resend } from 'resend';
 import { getTierBySlug } from '@/lib/tiers';
 import { db, ensureSchema } from '@/lib/db';
 import { getGlobalDiscountPercent, applyPercentDiscount } from '@/lib/utils';
@@ -12,14 +11,7 @@ import {
   BOOKING_DURATION_MINUTES,
   BOOKING_TIMEZONE 
 } from '@/lib/booking-rules';
-
-function getResend() {
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) {
-    throw new Error('RESEND_API_KEY not configured');
-  }
-  return new Resend(apiKey);
-}
+import { getResend, EMAIL_FROM, getOwnerEmail, getBrandLogoUrl } from '@/lib/email';
 
 function toRFC3339(date: string, time: string, durationMin = BOOKING_DURATION_MINUTES) {
   const [y, m, d] = date.split('-').map(Number);
@@ -187,19 +179,19 @@ export async function POST(request: Request) {
       sendUpdates: 'all',
     });
 
-  const logoUrl = process.env.PUBLIC_BRAND_LOGO_URL || 'https://raw.githubusercontent.com/umeraamir09/precision-details/refs/heads/master/public/branding/logo.png';
+  const logoUrl = getBrandLogoUrl();
     const time12 = to12h(time);
-    const ownerEmail = process.env.CONTACT_TO?.split(',')?.[0] || 'detailswithprecision@gmail.com';
+    const ownerEmail = getOwnerEmail();
     const resend = getResend();
   await resend.emails.send({
-      from: 'Precision Details <noreply@umroo.art>',
+      from: EMAIL_FROM,
       to: [ownerEmail],
       subject: `New booking: ${tier.name} on ${date} at ${time12}`,
   react: BookingEmailToOwner({ name, email, phone, notes, carModel: carModel || undefined, seatType: seatType || undefined, carType: normCarType, packageName: tier.name, price: tier.price, originalPrice: originalBase, discountPercent: discountPct>0 ? discountPct : undefined, date, time: time12, logoUrl, locationType, locationAddress: locationType === 'my' ? locationAddress || null : null, customFeatures: slug === 'custom' ? customLines : undefined }),
     });
 
     await resend.emails.send({
-      from: 'Precision Details <noreply@umroo.art>',
+      from: EMAIL_FROM,
       to: [email],
       subject: 'Your booking was received',
   react: BookingEmailToCustomer({ name, packageName: tier.name, price: tier.price, originalPrice: originalBase, discountPercent: discountPct>0 ? discountPct : undefined, date, time: time12, logoUrl, carModel: carModel || undefined, seatType: seatType || undefined, carType: normCarType, locationType, locationAddress: locationType === 'my' ? locationAddress || null : null, customFeatures: slug === 'custom' ? customLines : undefined }),
