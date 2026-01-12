@@ -1,28 +1,16 @@
 import { NextResponse } from 'next/server';
-import { google } from 'googleapis';
+import { randomBytes } from 'crypto';
 import { getTierBySlug } from '@/lib/tiers';
 import { db, ensureSchema } from '@/lib/db';
 import { getGlobalDiscountPercent, applyPercentDiscount } from '@/lib/utils';
+import { getPackagePrice } from '@/lib/pricing';
 import { describeServiceIds } from '@/lib/services';
-import { BookingEmailToCustomer, BookingEmailToOwner } from '@/app/components/booking-email-template';
+import { BookingConfirmationEmail } from '@/app/components/booking-email-template';
 import { 
   validateBookingSlot, 
-  slotsOverlap, 
-  BOOKING_DURATION_MINUTES,
-  BOOKING_TIMEZONE 
+  slotsOverlap 
 } from '@/lib/booking-rules';
-import { getResend, EMAIL_FROM, getOwnerEmail, getBrandLogoUrl } from '@/lib/email';
-
-function toRFC3339(date: string, time: string, durationMin = BOOKING_DURATION_MINUTES) {
-  const [y, m, d] = date.split('-').map(Number);
-  const [hh, mm] = time.split(':').map(Number);
-  const toStr = (n: number) => String(n).padStart(2, '0');
-  const start = `${y}-${toStr(m)}-${toStr(d)}T${toStr(hh)}:${toStr(mm)}:00`;
-  const endDate = new Date(y, m - 1, d, hh, mm);
-  endDate.setMinutes(endDate.getMinutes() + durationMin);
-  const end = `${y}-${toStr(m)}-${toStr(d)}T${toStr(endDate.getHours())}:${toStr(endDate.getMinutes())}:00`;
-  return { start, end };
-}
+import { getResend, EMAIL_FROM, getBrandLogoUrl } from '@/lib/email';
 
 function to12h(time: string) {
   const [hStr, mStr] = time.split(":");
@@ -53,6 +41,9 @@ type BookingPayload = {
 
 type CarType = 'sedan' | 'van' | 'suv';
 
+// Confirmation link expires in 24 hours
+const CONFIRMATION_EXPIRY_HOURS = 24;
+
 export async function POST(request: Request) {
   try {
   
@@ -81,23 +72,26 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Please provide a valid phone number.' }, { status: 400 });
       }
     }
-  const tier = getTierBySlug(slug) || (slug === 'custom' ? { name: 'Custom Package', price: (typeof customBase === 'number' && customBase >=0 ? customBase : 0), period: 'per car', features: customFeatures || [] } : null);
+  let tier = getTierBySlug(slug) || (slug === 'custom' ? { name: 'Custom Package', price: (typeof customBase === 'number' && customBase >=0 ? customBase : 0), period: 'per car', features: customFeatures || [] } : null);
   if (!tier) return NextResponse.json({ error: 'Invalid package' }, { status: 400 });
-  // For custom: build readable service lines & verify prices server-side to prevent tampering
-  let customLines: string[] | undefined;
+  
+  // Get dynamic price from database for non-custom packages
+  if (slug !== 'custom') {
+    const dynamicPrice = await getPackagePrice(slug);
+    tier = { ...tier, price: dynamicPrice };
+  }
+  
+  // For custom: verify prices server-side to prevent tampering
   if (slug === 'custom') {
     const ids = Array.isArray(customFeatures) ? customFeatures.filter(id => typeof id === 'string') : [];
-    const { lines, total } = describeServiceIds(ids);
+    const { total } = describeServiceIds(ids);
     tier.price = total; // override with server computed total
-    customLines = lines; // 'Name - $Price'
   }
 
   // Global discount before surcharges (discount only on base package price, not vehicle surcharge)
   const discountPct = await getGlobalDiscountPercent();
   let discountedBase = tier.price;
-  let originalBase: number | undefined;
   if (discountPct > 0 && tier.price > 0) {
-    originalBase = tier.price;
     const { discounted } = applyPercentDiscount(tier.price, discountPct);
     discountedBase = discounted;
   }
@@ -149,74 +143,53 @@ export async function POST(request: Request) {
     console.warn('DB availability check failed or DB not configured', e);
   }
 
-    
-    const clientEmail = process.env.GCAL_CLIENT_EMAIL;
-    const privateKey = (process.env.GCAL_PRIVATE_KEY || '').replace(/\\n/g, '\n');
-    const calendarId = process.env.GCAL_CALENDAR_ID;
-    if (!clientEmail || !privateKey || !calendarId) {
-      return NextResponse.json({ error: 'Google Calendar not configured' }, { status: 500 });
-    }
-
-    const jwt = new google.auth.JWT({
-      email: clientEmail,
-      key: privateKey,
-  scopes: ['https://www.googleapis.com/auth/calendar'],
-      subject: process.env.GCAL_CALENDAR_IMPERSONATE || undefined,
-    });
-
-    const calendar = google.calendar({ version: 'v3', auth: jwt });
-  const { start, end } = toRFC3339(date, time, BOOKING_DURATION_MINUTES);
-  const timeZone = BOOKING_TIMEZONE;
-
-  const event = await calendar.events.insert({
-      calendarId,
-    requestBody: {
-    summary: `${tier.name} - ${name}`,
-  description: `Package: ${tier.name}\nPrice: $${tier.price} ${tier.period}\nEmail: ${email}\nPhone: ${phone || ''}\nVehicle: ${carModel || ''}\nCar type: ${normCarType}\nSeat type: ${seatType || ''}\nNotes: ${notes || ''}\nLocation: ${locationType === 'shop' ? 'Precision Details (shop)' : 'Customer provided'}${locationType === 'my' && locationAddress ? `\nAddress: ${locationAddress}` : ''}${slug === 'custom' && customLines && customLines.length ? `\nCustom Services:\n${customLines.join('\n')}` : ''}`,
-  start: { dateTime: start, timeZone },
-  end: { dateTime: end, timeZone },
-      },
-      sendUpdates: 'all',
-    });
-
-  const logoUrl = getBrandLogoUrl();
-    const time12 = to12h(time);
-    const ownerEmail = getOwnerEmail();
-    const resend = getResend();
-  await resend.emails.send({
-      from: EMAIL_FROM,
-      to: [ownerEmail],
-      subject: `New booking: ${tier.name} on ${date} at ${time12}`,
-  react: BookingEmailToOwner({ name, email, phone, notes, carModel: carModel || undefined, seatType: seatType || undefined, carType: normCarType, packageName: tier.name, price: tier.price, originalPrice: originalBase, discountPercent: discountPct>0 ? discountPct : undefined, date, time: time12, logoUrl, locationType, locationAddress: locationType === 'my' ? locationAddress || null : null, customFeatures: slug === 'custom' ? customLines : undefined }),
-    });
-
-    await resend.emails.send({
-      from: EMAIL_FROM,
-      to: [email],
-      subject: 'Your booking was received',
-  react: BookingEmailToCustomer({ name, packageName: tier.name, price: tier.price, originalPrice: originalBase, discountPercent: discountPct>0 ? discountPct : undefined, date, time: time12, logoUrl, carModel: carModel || undefined, seatType: seatType || undefined, carType: normCarType, locationType, locationAddress: locationType === 'my' ? locationAddress || null : null, customFeatures: slug === 'custom' ? customLines : undefined }),
-    });
-
-    
-    try {
+  // Generate confirmation token
+  const token = randomBytes(32).toString('hex');
+  const expiresAt = new Date(Date.now() + CONFIRMATION_EXPIRY_HOURS * 60 * 60 * 1000);
+  
+  // Store pending booking
+  try {
     await db`
-  insert into bookings (slug, package_name, price, period, name, email, phone, car_model, seat_type, car_type, notes, date, time, status, gcal_event_id, location_type, location_address, custom_features, custom_base)
-  values (${slug}, ${tier.name}, ${tier.price}, ${tier.period}, ${name}, ${email}, ${phone || null}, ${carModel || null}, ${seatType || null}, ${normCarType}, ${notes || null}, ${date}, ${time}, ${'booked'}, ${event.data.id || null}, ${locationType ?? null}, ${locationType === 'my' ? (locationAddress ?? null) : null}, ${slug === 'custom' ? JSON.stringify(customFeatures || []) : null}, ${slug === 'custom' ? tier.price : null})
+      insert into pending_bookings (token, slug, package_name, price, period, name, email, phone, car_model, seat_type, car_type, notes, date, time, location_type, location_address, custom_features, custom_base, expires_at)
+      values (${token}, ${slug}, ${tier.name}, ${tier.price}, ${tier.period}, ${name}, ${email}, ${phone || null}, ${carModel || null}, ${seatType || null}, ${normCarType}, ${notes || null}, ${date}, ${time}, ${locationType ?? null}, ${locationType === 'my' ? (locationAddress ?? null) : null}, ${slug === 'custom' ? JSON.stringify(customFeatures || []) : null}, ${slug === 'custom' ? tier.price : null}, ${expiresAt.toISOString()})
     `;
-    } catch (e: unknown) {
-      console.error('Failed to persist booking to Neon', e);
-      const msg = e instanceof Error ? e.message : (typeof e === 'string' ? e : '');
-      if (
-        msg.includes('uniq_one_booking_per_day') ||
-        msg.includes('uniq_one_booking_on_weekdays') ||
-        msg.toLowerCase().includes('duplicate key value')
-      ) {
-        return NextResponse.json({ error: 'This date is no longer available. Please choose another day.' }, { status: 409 });
-      }
-      
-    }
+  } catch (e: unknown) {
+    console.error('Failed to create pending booking', e);
+    return NextResponse.json({ error: 'Failed to initiate booking' }, { status: 500 });
+  }
+  
+  // Build confirmation URL
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || process.env.VERCEL_URL 
+    ? `https://${process.env.VERCEL_URL}` 
+    : 'http://localhost:3000';
+  const confirmUrl = `${baseUrl}/booking/confirm/${token}`;
+  
+  // Send confirmation email
+  const logoUrl = getBrandLogoUrl();
+  const time12 = to12h(time);
+  const resend = getResend();
+  
+  await resend.emails.send({
+    from: EMAIL_FROM,
+    to: [email],
+    subject: 'Confirm your booking - Precision Details',
+    react: BookingConfirmationEmail({ 
+      name, 
+      packageName: tier.name, 
+      price: tier.price, 
+      date, 
+      time: time12, 
+      confirmUrl,
+      expiresInHours: CONFIRMATION_EXPIRY_HOURS,
+      logoUrl,
+    }),
+  });
 
-    return NextResponse.json({ ok: true, eventId: event.data.id });
+  return NextResponse.json({ 
+    ok: true, 
+    requiresConfirmation: true,
+    message: 'Please check your email to confirm your booking.' 
+  });
   } catch (err) {
     console.error('Booking route error', err);
     return NextResponse.json({ error: 'Failed to create booking' }, { status: 500 });

@@ -82,6 +82,35 @@ export async function ensureSchema() {
   } catch (e) {
     console.warn('Failed to seed default discount', e);
   }
+
+  // Table for pending bookings (awaiting email confirmation)
+  await db`
+    create table if not exists pending_bookings (
+      id bigserial primary key,
+      token text unique not null,
+      slug text not null,
+      package_name text not null,
+      price integer not null,
+      period text not null,
+      name text not null,
+      email text not null,
+      phone text,
+      car_model text,
+      seat_type text,
+      car_type text,
+      notes text,
+      date date not null,
+      time text not null,
+      location_type text,
+      location_address text,
+      custom_features jsonb,
+      custom_base integer,
+      expires_at timestamptz not null,
+      created_at timestamptz not null default now()
+    )
+  `;
+  // Index for cleanup of expired pending bookings
+  await db`create index if not exists idx_pending_bookings_expires on pending_bookings (expires_at)`;
 }
 
 export type BookingRow = {
@@ -108,4 +137,28 @@ export type BookingRow = {
   custom_base?: number | null;
   created_at: string;
   updated_at: string;
+};
+
+export type PendingBookingRow = {
+  id: number;
+  token: string;
+  slug: string;
+  package_name: string;
+  price: number;
+  period: string;
+  name: string;
+  email: string;
+  phone: string | null;
+  car_model?: string | null;
+  seat_type?: 'leather' | 'cloth' | string | null;
+  car_type?: 'sedan' | 'van' | 'suv' | string | null;
+  notes: string | null;
+  date: string;
+  time: string;
+  location_type?: 'my' | 'shop' | string | null;
+  location_address?: string | null;
+  custom_features?: string[] | null;
+  custom_base?: number | null;
+  expires_at: string;
+  created_at: string;
 };

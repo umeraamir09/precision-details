@@ -72,3 +72,34 @@ export const tiers: Tier[] = [
 export function getTierBySlug(slug: string) {
   return tiers.find((t) => t.slug === slug);
 }
+
+/**
+ * Get tiers with dynamically loaded prices from the database.
+ * This should be used in server components.
+ */
+export async function getTiersWithDynamicPrices(): Promise<Tier[]> {
+  const { getPackagePrices } = await import('./pricing');
+  const prices = await getPackagePrices();
+  
+  return tiers.map(tier => ({
+    ...tier,
+    price: prices[tier.slug] ?? tier.price,
+  }));
+}
+
+/**
+ * Get a single tier with dynamic price from the database.
+ * This should be used in server components.
+ */
+export async function getTierBySlugWithDynamicPrice(slug: string): Promise<Tier | undefined> {
+  const tier = getTierBySlug(slug);
+  if (!tier) return undefined;
+  
+  const { getPackagePrice } = await import('./pricing');
+  const price = await getPackagePrice(slug);
+  
+  return {
+    ...tier,
+    price,
+  };
+}

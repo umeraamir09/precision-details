@@ -104,6 +104,13 @@ export default async function AdminDashboardPage() {
                 <span>Manage Bookings</span>
               </Link>
               <Link 
+                href="/admin/pricing" 
+                className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-white/80 transition hover:bg-white/5"
+              >
+                <span>💰</span>
+                <span>Package Pricing</span>
+              </Link>
+              <Link 
                 href="/admin/discount" 
                 className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-white/80 transition hover:bg-white/5"
               >

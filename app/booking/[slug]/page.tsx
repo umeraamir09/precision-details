@@ -2,12 +2,20 @@ import { notFound } from 'next/navigation';
 import BookingSuccessBanner from '@/app/components/BookingSuccessBanner';
 import { getTierBySlug, type Tier } from '@/lib/tiers';
 import { getGlobalDiscountPercent, applyPercentDiscount } from '@/lib/utils';
+import { getPackagePrice } from '@/lib/pricing';
 import BookingClient from './BookingClient';
 
 export default async function BookingPage({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams?: Promise<Record<string, string | string[]>> }) {
   const { slug } = await params;
   const qp = (await (searchParams || Promise.resolve({}))) as Record<string, string | string[]>;
   let tier = getTierBySlug(slug);
+  
+  // Get dynamic price from database
+  if (tier) {
+    const dynamicPrice = await getPackagePrice(slug);
+    tier = { ...tier, price: dynamicPrice };
+  }
+  
   if (!tier && slug === 'custom') {
   const rawFeatures = qp['features'];
   const featureStr = typeof rawFeatures === 'string' ? rawFeatures : Array.isArray(rawFeatures) ? rawFeatures[0] : '';

@@ -1,6 +1,7 @@
 import Reveal from "../components/Reveal";
 import PricingPlans from "./PricingPlans";
 import { getGlobalDiscountPercent } from '@/lib/utils';
+import { getPackagePrices } from '@/lib/pricing';
 import { Metadata } from "next";
 import { FiCheck, FiArrowRight } from "react-icons/fi";
 import Link from "next/link";
@@ -38,6 +39,7 @@ const faqs = [
 
 export default async function PricingPage() {
   const discount = await getGlobalDiscountPercent();
+  const prices = await getPackagePrices();
   
   return (
     <main className="min-h-svh bg-background">
@@ -65,7 +67,7 @@ export default async function PricingPage() {
 
       {/* Pricing Cards */}
       <section className="pb-20">
-        <PricingPlans initialDiscount={discount} />
+        <PricingPlans initialDiscount={discount} initialPrices={prices} />
       </section>
 
       {/* What's Included Section */}

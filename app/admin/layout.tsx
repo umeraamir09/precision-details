@@ -41,6 +41,7 @@ export default function AdminLayout({
             </NavSection>
             
             <NavSection title="Settings">
+              <NavLink href="/admin/pricing" icon="💰">Package Pricing</NavLink>
               <NavLink href="/admin/discount" icon="🏷️">Discounts</NavLink>
             </NavSection>
           </nav>
