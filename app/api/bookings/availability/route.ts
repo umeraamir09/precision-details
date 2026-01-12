@@ -1,44 +1,47 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db, ensureSchema, hasDb } from '@/lib/db';
-
-function isWeekendStr(dateStr: string) {
-  const [y, m, d] = dateStr.split('-').map(Number);
-  const dt = new Date(y, (m || 1) - 1, d || 1);
-  const dow = dt.getDay(); // 0 Sun, 6 Sat
-  return dow === 0 || dow === 6;
-}
-
+import { 
+  getAvailableSlots, 
+  filterAvailableSlots,
+  isWeekendStr,
+} from '@/lib/booking-rules';
 
 export async function GET(req: NextRequest) {
   try {
     if (!hasDb) {
-      return NextResponse.json({ ok: true, dates: [] as string[] });
+      return NextResponse.json({ ok: true, dates: [] as string[], existing: [] as string[] });
     }
     await ensureSchema();
 
     const { searchParams } = req.nextUrl;
     const dateParam = searchParams.get('date');
 
-    // Per-date availability: for weekends, return taken 4h slots; for weekdays, nothing special
+    // Per-date availability: return existing booking times for the given date
     if (dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam)) {
-      const isWknd = isWeekendStr(dateParam);
-      if (!isWknd) {
-        return NextResponse.json({ ok: true, type: 'weekday', taken: [] as string[] });
-      }
-
-      // Weekend logic: return existing booking start times (HH:mm)
       const rows = (await db`
         select time from bookings where status != 'cancelled' and date = ${dateParam}
       `) as unknown as Array<{ time: string }>;
-      const existingStarts = rows
+      
+      const existingTimes = rows
         .map((r) => (typeof r.time === 'string' ? r.time : String(r.time)))
         .filter((s) => /^\d{2}:\d{2}$/.test(s));
 
-      return NextResponse.json({ ok: true, type: 'weekend', existing: existingStarts });
+      // Also return available slots for the date
+      const [y, m, d] = dateParam.split('-').map(Number);
+      const dateObj = new Date(y, m - 1, d);
+      const allSlots = getAvailableSlots(dateObj);
+      const availableSlots = filterAvailableSlots(allSlots, existingTimes);
+
+      return NextResponse.json({ 
+        ok: true, 
+        existing: existingTimes,
+        available: availableSlots,
+        allSlots: allSlots,
+      });
     }
 
-    // Range availability for calendar: return only weekdays that already have a booking,
-    // so weekdays can be disabled as fully booked but weekends remain selectable.
+    // Range availability for calendar: return dates that are fully booked
+    // A date is fully booked if all available slots have conflicts
     const from = searchParams.get('from');
     const to = searchParams.get('to');
     const today = new Date();
@@ -49,18 +52,40 @@ export async function GET(req: NextRequest) {
     const fromStr = from && /^\d{4}-\d{2}-\d{2}$/.test(from) ? from : todayStr;
     const toStr = to && /^\d{4}-\d{2}-\d{2}$/.test(to) ? to : endStr;
 
+    // Get all bookings in the range
     const rows = (await db`
-      select distinct date from bookings
+      select date, time from bookings
       where status != 'cancelled'
-        and extract(dow from date) not in (0,6) -- weekdays only
         and date between ${fromStr} and ${toStr}
-    `) as unknown as Array<{ date: string | Date }>;
-    // Normalize to local-like YYYY-MM-DD strings without timezone shifting
-    const dates = rows.map((r) => {
-      if (typeof r.date === 'string') return r.date;
-      const d = r.date as Date; return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-    });
-    return NextResponse.json({ ok: true, dates });
+    `) as unknown as Array<{ date: string | Date; time: string }>;
+
+    // Group bookings by date
+    const bookingsByDate = new Map<string, string[]>();
+    for (const r of rows) {
+      const dateStr = typeof r.date === 'string' 
+        ? r.date 
+        : `${r.date.getFullYear()}-${pad(r.date.getMonth() + 1)}-${pad(r.date.getDate())}`;
+      const timeStr = typeof r.time === 'string' ? r.time : String(r.time);
+      if (!bookingsByDate.has(dateStr)) {
+        bookingsByDate.set(dateStr, []);
+      }
+      bookingsByDate.get(dateStr)!.push(timeStr);
+    }
+
+    // Find dates that are fully booked
+    const fullyBookedDates: string[] = [];
+    for (const [dateStr, existingTimes] of bookingsByDate) {
+      const [y, m, d] = dateStr.split('-').map(Number);
+      const dateObj = new Date(y, m - 1, d);
+      const allSlots = getAvailableSlots(dateObj);
+      const availableSlots = filterAvailableSlots(allSlots, existingTimes);
+      
+      if (availableSlots.length === 0) {
+        fullyBookedDates.push(dateStr);
+      }
+    }
+
+    return NextResponse.json({ ok: true, dates: fullyBookedDates });
   } catch (e) {
     console.error('GET /api/bookings/availability failed', e);
     return NextResponse.json({ ok: true, dates: [] as string[] });

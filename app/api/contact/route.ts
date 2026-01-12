@@ -3,8 +3,13 @@ import { Resend } from 'resend';
 import { EmailTemplate } from '@/app/components/email-template';
 import { ConfirmationTemplate } from '@/app/components/confirmation-template';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
+function getResend() {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    throw new Error('RESEND_API_KEY not configured');
+  }
+  return new Resend(apiKey);
+}
 
 export async function POST(request: Request) {
   try {
@@ -17,6 +22,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
+    const resend = getResend();
     const logoUrl = process.env.PUBLIC_BRAND_LOGO_URL || 'https://raw.githubusercontent.com/umeraamir09/precision-details/refs/heads/master/public/branding/logo.png';
     const { error } = await resend.emails.send({
       from: 'Precision Details <noreply@umroo.art>',
