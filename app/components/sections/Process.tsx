@@ -4,8 +4,8 @@ import { motion } from 'framer-motion';
 const steps = [
   {
     number: '01',
-    title: 'Book Online',
-    description: 'Choose your package and pick a convenient time. Our booking system makes it simple.',
+    title: 'Schedule Online',
+    description: 'Choose your package and grab a time that works using our Cal.com scheduler.',
   },
   {
     number: '02',

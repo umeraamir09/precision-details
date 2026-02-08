@@ -285,7 +285,7 @@ export default function ContactPage() {
             </p>
             <div className="mt-8">
               <Button asChild size="lg" className="rounded-full px-8">
-                <Link href="/pricing">View Packages & Book</Link>
+                <Link href="/booking">Book Online</Link>
               </Button>
             </div>
           </Reveal>

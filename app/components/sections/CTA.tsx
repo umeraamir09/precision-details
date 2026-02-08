@@ -61,7 +61,7 @@ export default function CTA() {
                 size="lg"
                 className="w-full sm:w-auto rounded-full bg-white text-primary hover:bg-white/90 px-8 py-6 text-lg font-semibold group"
               >
-                <Link href="/pricing">
+                <Link href="/booking">
                   <FiCalendar className="mr-2 h-5 w-5" />
                   Book Now
                   <FiArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
