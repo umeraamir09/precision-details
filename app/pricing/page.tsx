@@ -1,7 +1,5 @@
 import Reveal from "../components/Reveal";
 import PricingPlans from "./PricingPlans";
-import { getGlobalDiscountPercent } from '@/lib/utils';
-import { getPackagePrices } from '@/lib/pricing';
 import { Metadata } from "next";
 import { FiCheck, FiArrowRight } from "react-icons/fi";
 import Link from "next/link";
@@ -15,8 +13,6 @@ export const metadata: Metadata = {
     description: "Premium car detailing packages with transparent pricing. Find the perfect package for your vehicle.",
   },
 };
-
-export const dynamic = 'force-dynamic';
 
 const faqs = [
   {
@@ -37,10 +33,7 @@ const faqs = [
   },
 ];
 
-export default async function PricingPage() {
-  const discount = await getGlobalDiscountPercent();
-  const prices = await getPackagePrices();
-  
+export default function PricingPage() {
   return (
     <main className="min-h-svh bg-background">
       {/* Hero Section */}
@@ -58,8 +51,7 @@ export default async function PricingPage() {
               Simple Pricing, <span className="gradient-text">Stunning Results</span>
             </h1>
             <p className="mt-6 text-lg text-muted-foreground">
-              Choose the perfect package for your vehicle. All prices are transparent with no hidden fees. 
-              Not sure which to choose? Build a custom package tailored to your needs.
+              Choose the perfect package for your vehicle. All prices are transparent with no hidden fees.
             </p>
           </Reveal>
         </div>
@@ -67,7 +59,7 @@ export default async function PricingPage() {
 
       {/* Pricing Cards */}
       <section className="pb-20">
-        <PricingPlans initialDiscount={discount} initialPrices={prices} />
+        <PricingPlans />
       </section>
 
       {/* What's Included Section */}
@@ -99,7 +91,7 @@ export default async function PricingPage() {
               },
               {
                 title: "Flexible Scheduling",
-                description: "Book online and choose a time that works for you.",
+                description: "Schedule online in minutes with live availability.",
               },
               {
                 title: "Insured & Professional",
@@ -174,14 +166,14 @@ export default async function PricingPage() {
               }} />
               <div className="relative">
                 <h2 className="font-heading text-2xl sm:text-3xl lg:text-4xl font-bold text-white">
-                  Not Sure Which Package to Choose?
+                  Ready to Schedule Your Detail?
                 </h2>
                 <p className="mt-4 text-white/90 max-w-2xl mx-auto">
-                  Build a custom package with exactly the services you need. Get instant pricing and book online.
+                  Book online in minutes with our Cal.com scheduler and we&apos;ll take care of the rest.
                 </p>
                 <div className="mt-8">
                   <Button asChild size="lg" className="rounded-full bg-white text-primary hover:bg-white/90 px-8">
-                    <Link href="/custom">Build Custom Package</Link>
+                    <Link href="/booking">Book Your Detail</Link>
                   </Button>
                 </div>
               </div>

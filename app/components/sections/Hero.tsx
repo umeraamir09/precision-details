@@ -90,7 +90,7 @@ export default function Hero() {
             className="mt-10 flex flex-col sm:flex-row gap-4"
           >
             <Button asChild size="lg" className="group rounded-full px-8 py-6 text-lg font-semibold">
-              <Link href="/pricing">
+              <Link href="/booking">
                 Book Your Detail
                 <FiArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
               </Link>

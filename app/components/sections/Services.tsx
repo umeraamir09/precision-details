@@ -6,26 +6,41 @@ import { FiArrowRight, FiCheck } from 'react-icons/fi';
 
 const services = [
   {
-    title: 'Exterior Detailing',
-    description: 'Complete exterior restoration including hand wash, clay bar treatment, polish, and wax protection.',
-    features: ['Hand wash & dry', 'Clay bar treatment', 'Paint polish', 'Wax protection'],
-    price: 'From $60',
+    title: 'Exterior Detail',
+    description: 'A crisp exterior refresh that protects paint and restores shine with a safe, thorough wash.',
+    features: [
+      'Hand wash + two-stage foam wash',
+      'Wheels, tires & inner wells cleaned',
+      'Exterior glass cleaned',
+      'Paint sealant applied (~2 months)',
+    ],
+    price: '$65',
     popular: false,
     image: '/gallery-1.jpg',
   },
   {
-    title: 'Interior Detailing',
-    description: 'Deep interior cleaning with leather conditioning, carpet shampooing, and odor elimination.',
-    features: ['Vacuum & steam clean', 'Leather conditioning', 'Carpet shampoo', 'Odor elimination'],
-    price: 'From $95',
+    title: 'Interior Detail',
+    description: 'Deep interior reset with shampoo, UV protection, and a fresh finish throughout.',
+    features: [
+      'Full interior deep clean',
+      'Seats & carpets shampooed',
+      'Leather cleaned + UV-protected',
+      'Light interior fragrance',
+    ],
+    price: '$135',
     popular: true,
     image: '/gallery-2.jpg',
   },
   {
-    title: 'Full Detail Package',
-    description: 'Complete interior and exterior detailing for a showroom-ready finish your car deserves.',
-    features: ['Full exterior detail', 'Full interior detail', 'Engine bay clean', 'Paint protection'],
-    price: 'From $206',
+    title: 'Full Detail Plus',
+    description: 'Complete interior + exterior detail with paint decontamination for a showroom-level finish.',
+    features: [
+      'Complete exterior detail',
+      'Complete interior detail',
+      'Paint decontamination (iron + clay)',
+      'Paint sealant applied',
+    ],
+    price: '$225',
     popular: false,
     image: '/gallery-3.jpg',
   },
@@ -108,7 +123,7 @@ export default function Services() {
                         {service.price}
                       </span>
                       <Button asChild variant={service.popular ? 'default' : 'outline'} className="rounded-full group/btn">
-                        <Link href="/pricing">
+                        <Link href="/booking">
                           Book Now
                           <FiArrowRight className="ml-2 h-4 w-4 transition-transform group-hover/btn:translate-x-1" />
                         </Link>

@@ -83,7 +83,7 @@ const Header = () => {
                 <span className="hidden xl:inline">(331) 307-8784</span>
               </a>
               <Button asChild className="rounded-full px-6">
-                <Link href="/pricing">Book Now</Link>
+                <Link href="/booking">Book Now</Link>
               </Button>
             </div>
 
@@ -158,7 +158,7 @@ const Header = () => {
                 {/* CTA Button */}
                 <div className="mt-auto">
                   <Button asChild className="w-full rounded-full py-6 text-lg" onClick={() => setOpen(false)}>
-                    <Link href="/pricing">Book Now</Link>
+                    <Link href="/booking">Book Now</Link>
                   </Button>
                 </div>
               </div>

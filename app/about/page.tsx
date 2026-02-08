@@ -255,7 +255,7 @@ export default function AboutPage() {
                 </p>
                 <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
                   <Button asChild size="lg" className="rounded-full bg-white text-primary hover:bg-white/90 px-8">
-                    <Link href="/pricing">Book Now</Link>
+                    <Link href="/booking">Book Now</Link>
                   </Button>
                   <Button asChild size="lg" variant="outline" className="rounded-full border-white/30 text-white hover:bg-white/10 px-8">
                     <Link href="/contact">Contact Us</Link>

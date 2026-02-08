@@ -6,9 +6,9 @@ import { FiPhone, FiMail, FiMapPin, FiClock } from "react-icons/fi";
 const footerLinks = {
   services: [
     { href: "/pricing", label: "All Services" },
-    { href: "/booking/silver", label: "Full Detail" },
-    { href: "/booking/upholstery", label: "Interior Detail" },
-    { href: "/custom", label: "Custom Package" },
+    { href: "/booking", label: "Book an Appointment" },
+    { href: "/pricing", label: "Exterior Detail" },
+    { href: "/pricing", label: "Interior Detail" },
   ],
   company: [
     { href: "/about", label: "About Us" },
